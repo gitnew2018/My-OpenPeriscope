@@ -4,7 +4,7 @@ Unofficial in-browser client for Periscope (userscript)
 
 ### Using as standalone application
 
-You can use pre-built executables from [Releases page](https://github.com/Pmmlabs/OpenPeriscope/releases), or 
+You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or 
 
 1. Download NW.js v0.12.3: http://dl.nwjs.io/v0.12.3/
 1. Unpack it and add path to PATH enviroment variable
@@ -21,55 +21,29 @@ If you want to update pre-built version, you can use [this instructions](https:/
 ### Using as userscript
 
 1. Install [userscript manager](https://greasyfork.org/help/installing-user-scripts)
-1. Click to [link](https://raw.githubusercontent.com/Pmmlabs/OpenPeriscope/master/Periscope_Web_Client.user.js) and then "Install"
+1. Click to [link](https://raw.githubusercontent.com/gitnew2018/My-OpenPeriscope/master/Periscope_Web_Client.user.js) and then "Install"
 1. Navigate to http://example.net
 
 In this case posting to chat will not work.
 
-### Authorization
+### Features added in my version
 
-1. Type consumer secret of Periscope App (_Where do I get it?_ Hunt out. Reverse the app, steal from twitter's devs, or something [else](http://pastebin.com))
-1. Click "Sign in with twitter"
-1. Login to the Twitter (if not yet) and click "Authorize"
-1. Here you go!
-
-### Features
-
-* All functions of mobile client (except broadcasting)
-* Recording of live broadcasts
-* Downloading of replays
-* Notifications and automatic download, when broadcast from subscriptions starts
-* Screenlists
-* Chat history (also in SRT subtitles)
-* Periscope API test
-
-In userscript version, "Download" link is absent, so you can use FFmpeg (or other program) to download broadcasts:
-
-Lives:<br>
-`ffmpeg -i "your_link_here" -c copy -bsf:a aac_adtstoasc result.mp4`
-
-Replays:<br>
-`ffmpeg -protocol_whitelist file,https,tls,hls,tcp -i playlist.m3u8 -c copy -bsf:a aac_adtstoasc result.mp4`
-
-### API Documentation
-
-Docs by @cjhbtn, actualized by me: http://static.pmmlabs.ru/OpenPeriscope
+* New broadcasts after refresh are highlited (marked in code as /* drkchange0 */)
+* Now thumbnail previews open in new window(drkchange1)
+* Download button changes(drkchange2)
+* You can select users who's braodcasts will be recorded(drkchange3)
+* New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
+* Preserve scroll position when switching to other subpages(drkchange5)
+* Download Manager (drkchange6)
+* Dark theme (changes in style.css)
+* some other minor tweaks.
 
 ### Screenshot
 
-![screenshot](https://cloud.githubusercontent.com/assets/2682026/15555303/3540d09e-22d9-11e6-9934-fb84a201a0e9.png)
+![screenshot](https://user-images.githubusercontent.com/37026885/37880128-0360d5be-3084-11e8-8f32-77ae48a4896a.png)
 
-### Third-party software
-
-1. jQuery https://jquery.com
-1. CryptoJS http://crypto-js.googlecode.com
-1. Leaflet http://leafletjs.com
-1. Leaflet.markercluster https://github.com/Leaflet/Leaflet.markercluster
-1. js-emoji https://github.com/iamcal/js-emoji
-1. clipboard.js https://clipboardjs.com
-1. jQuery Spoiler https://github.com/le717/jquery-spoiler
-1. Split.js https://github.com/nathancahill/Split.js
-
-### Donate
+### Donate to original autor
 Buy me a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
 Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
+
+More info in original repository https://github.com/Pmmlabs/OpenPeriscope
