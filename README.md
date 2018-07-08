@@ -2,6 +2,18 @@
 # OpenPeriscope
 Unofficial in-browser client for Periscope (userscript)
 
+### Features added in my version
+
+* New broadcasts after refresh are highlited (marked in code as /* drkchange0 */)
+* Now thumbnail previews open in new window(drkchange1)
+* Download button changes(drkchange2)
+* You can select users who's braodcasts will be recorded(drkchange3)
+* New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
+* Preserve scroll position when switching to other subpages(drkchange5)
+* Download Manager (drkchange6)
+* Dark theme (changes in style.css)
+* some other minor tweaks.
+
 ### Using as standalone application
 
 You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or 
@@ -25,18 +37,6 @@ If you want to update pre-built version, you can use [this instructions](https:/
 1. Navigate to http://example.net
 
 In this case posting to chat will not work.
-
-### Features added in my version
-
-* New broadcasts after refresh are highlited (marked in code as /* drkchange0 */)
-* Now thumbnail previews open in new window(drkchange1)
-* Download button changes(drkchange2)
-* You can select users who's braodcasts will be recorded(drkchange3)
-* New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
-* Preserve scroll position when switching to other subpages(drkchange5)
-* Download Manager (drkchange6)
-* Dark theme (changes in style.css)
-* some other minor tweaks.
 
 ### Screenshot
 
