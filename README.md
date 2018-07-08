@@ -38,6 +38,10 @@ If you want to update pre-built version, you can use [this instructions](https:/
 
 In this case posting to chat will not work.
 
+In userscript version, "Download" link is absent, so you can use downloaderNode (or other program) to download broadcasts:
+
+[My standalone periscope nodejs downloader](https://github.com/gitnew2018/nodejs_peri_downloader)
+
 ### Screenshot
 
 ![screenshot](https://user-images.githubusercontent.com/37026885/37880128-0360d5be-3084-11e8-8f32-77ae48a4896a.png)
