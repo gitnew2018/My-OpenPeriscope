@@ -1746,7 +1746,8 @@ function download(name, url, cookies, user_id, user_name, /* drkchange6 */whole_
     });
     //////////////////////////////////////////////////////////////////* drkchange4 */ end
     ///////////////////////////////////////////////////////////////* drkchange6 */
-    /* drkchange6 */ spawn.b_info = whole_response;
+    spawn.b_info = whole_response;
+    spawn.folder_path = output_dir;
     spawn.file_name = name;
     childProcesses.push(spawn);
     if(childProcesses.length > 50){
