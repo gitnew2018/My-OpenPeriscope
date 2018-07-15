@@ -5,7 +5,7 @@ Unofficial in-browser client for Periscope (userscript)
 ### Features added in my version
 
 * New broadcasts after refresh are highlited (marked in code as /* drkchange0 */)
-* Now thumbnail previews open in new window(drkchange1)
+* Now thumbnail previews of replays open in new window(drkchange1)
 * Download button changes(drkchange2)
 * You can select users who's braodcasts will be recorded(drkchange3)
 * New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
@@ -16,19 +16,7 @@ Unofficial in-browser client for Periscope (userscript)
 
 ### Using as standalone application
 
-You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or 
-
-1. Download NW.js v0.12.3: http://dl.nwjs.io/v0.12.3/
-1. Unpack it and add path to PATH enviroment variable
-1. Copy ffmpegsumo.dll (libffmpegsumo.so for Linux) from Google Chrome 41 directory to NW.js directory
-1. Download and unpack [ffmpeg static build](https://ffmpeg.zeranoe.com/builds/) to OpenPeriscope directory
-1. Download and install NPM (bundled with node.js): https://nodejs.org/download/release/latest/
-1. Run in repo directory
-```
- npm install
- nw . 
- ```
-If you want to update pre-built version, you can use [this instructions](https://github.com/Pmmlabs/OpenPeriscope/wiki#how-to-update-portable-version-exe)
+You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or build it by yourself from source [guide link](https://github.com/gitnew2018/My-OpenPeriscope/wiki).
 
 ### Using as userscript
 
