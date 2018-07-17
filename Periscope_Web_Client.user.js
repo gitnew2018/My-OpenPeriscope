@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1 based on 1.8
+// @version     0.1
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -16,15 +16,15 @@
 // @require     http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js
 // @require     http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js
 // @require     https://github.com/iamcal/js-emoji/raw/master/lib/emoji.js
-// @require     https://github.com/zenorocha/clipboard.js/raw/master/dist/clipboard.min.js
+// @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/nathancahill/Split.js/raw/master/split.min.js
 // @downloadURL https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Periscope_Web_Client.user.js
 // @updateURL   https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Periscope_Web_Client.meta.js
 // @icon        https://github.com/gitnew2018/My-OpenPeriscope/raw/master/images/openperiscope.png
 // @noframes
-// @grant       GM.xmlHttpRequest
-// @grant       GM.getResourceUrl
+// @grant       GM_addStyle
+// @grant       GM_getResourceText
 // @resource    CSS style.css
 // ==/UserScript==
 
