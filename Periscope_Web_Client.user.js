@@ -295,7 +295,7 @@ var Notifications = {
 };
 /* drkchange5 */var ScrollPositions={}
 function switchSection(section, param, popstate) {
-    /* drkchange5 */ ScrollPositions[document.URL.split('/')[3]]=document.body.scrollTop
+    /* drkchange5 */ ScrollPositions[document.URL.split('/')[3]] = window.pageYOffset;
     // Switch menu
     $('.menu.active').removeClass('active');
     $('#menu'+section).addClass('active');
@@ -1826,12 +1826,13 @@ function getDescription(stream) {
         Api('replayThumbnailPlaylist', {
             broadcast_id: stream.id
         }, function (thumbs) {
-            var html = '<html><head><title>'+(stream.status || 'Untitled')+' [OpenPeriscope]</title></head><body>';
+            /* drkchange7 */
+            var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=750,height=600,top=100,left="+(screen.width/2));
+            var html = '<title>'+(stream.status || 'Untitled')+' [OpenPeriscope]</title>';
             for (var i in thumbs.chunks) {
                 html+='<img src="' + thumbs.chunks[i].tn + '"/>';
             }
-            html+='</body></html>';
-            window.open('data:text/html;charset=utf-8,'+encodeURIComponent(html));
+            win.document.body.innerHTML = html;
         });
     });
     var getFlag = function (country) {
@@ -1843,10 +1844,8 @@ function getDescription(stream) {
     };
     /* drkchange1 */var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
     + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': '')+'</a>').click(function () {
-        var html = '<html><head><title>' + (stream.status || 'Untitled') + ' [OpenPeriscope]</title></head><body>';
-        html += '<img src="' + stream.image_url + '"/>';
-        html += '</body></html>';
-        window.open('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+        var win = window.open("", "screen", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=600,top=100,left="+(screen.width/2));
+        win.document.body.innerHTML = '<title>'+(stream.status || 'Untitled')+' [OpenPeriscope]</title><img src="' + stream.image_url + '"/>';
     });
     /* drkchange1*/var watchingTitle=('<div class="watching right icon" title="Watching">' + /* drkchange same as in officail app */(stream.n_total_watching || stream.n_web_watching || stream.n_watching || stream.n_total_watched || 0) + '</div>\
     <a target="_blank" href="https://www.periscope.tv/w/' + stream.id + '">' + title + '</a>'+featured_reason)

@@ -238,7 +238,6 @@ input#debug {
 .username, .leaflet-container a.username {
     color: grey;
     font-weight: bold;
-    max-height: 1.5em;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
@@ -315,7 +314,8 @@ input#debug {
     padding-left: 25px;
     background-repeat: no-repeat;
     background-position: 5px center;
-    -webkit-filter: invert() opacity(70%);
+    -webkit-filter: invert(1) opacity(70%);
+    filter: invert(1) opacity(70%);
     color: #FC641D;
 }
 
