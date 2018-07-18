@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @id          My-OpenPeriscope@pmmlabs.ru
 // @name        Periscope Web Client
-// @namespace   https://greasyfork.org/users/23x
+// @namespace   https://greasyfork.org/users/nouser
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
@@ -1826,7 +1826,7 @@ function getDescription(stream) {
         Api('replayThumbnailPlaylist', {
             broadcast_id: stream.id
         }, function (thumbs) {
-            /* drkchange7 */
+            /* drkchange1 */
             var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=750,height=600,top=100,left="+(screen.width/2));
             var html = '<title>'+(stream.status || 'Untitled')+' [OpenPeriscope]</title>';
             for (var i in thumbs.chunks) {

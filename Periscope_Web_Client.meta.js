@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id          My-OpenPeriscope@pmmlabs.ru
 // @name        Periscope Web Client
-// @namespace   https://greasyfork.org/users/23x
+// @namespace   https://greasyfork.org/users/nouser
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*

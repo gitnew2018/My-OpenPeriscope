@@ -321,6 +321,7 @@ input#debug {
 
 .icon:hover {
     -webkit-filter: invert() opacity();
+    filter: invert(1) opacity();
 }
 
 .chatlink {
