@@ -11,6 +11,7 @@ Unofficial in-browser client for Periscope (userscript)
 * New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
 * Preserve scroll position when switching to other subpages(drkchange5)
 * Download Manager (drkchange6)
+* Persistent links between refreshes (drkchange7)
 * Dark theme (changes in style.css)
 * some other minor tweaks.
 

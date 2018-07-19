@@ -1566,6 +1566,7 @@ function zeros(number) {
     return matches;
 }
 /* drkchange0 */ oldBroadcastsList = [];
+/* drkchange7 */ broadcastsWithLinks = {idsQueue:[]};
 function refreshList(jcontainer, title, /* drkchange0 */ refreshFrom) {  // use it as callback arg
     return function (response) {
         jcontainer.html(title || '<div style="clear:both"/>');
@@ -1587,6 +1588,7 @@ function refreshList(jcontainer, title, /* drkchange0 */ refreshFrom) {  // use 
                 link.click(getM3U.bind(null, response[i].id, stream));
                 jcontainer.append(stream.append(link));
                 ids.push(response[i].id);
+                /* drkchange7 */ broadcastsWithLinks.hasOwnProperty(response[i].id) ? stream.find('.links').append(broadcastsWithLinks[response[i].id].m3uLink, NODEJS ? [' | ', broadcastsWithLinks[response[i].id].downloadLink] : '', ' | ',broadcastsWithLinks[response[i].id].clipboardLink) : '';
             }
             if (typeof response[0].n_watching == 'undefined')
                 Api('getBroadcasts', {
@@ -1618,12 +1620,23 @@ function getM3U(id, jcontainer) {
             }
             params += 'Expires=0';
         }
+        /* drkchange7 */ if(broadcastsWithLinks.idsQueue.indexOf(id) === -1){
+            broadcastsWithLinks.idsQueue.push(id)
+        }
+        /* drkchange7 */if(broadcastsWithLinks.idsQueue.length > 30){
+            delete broadcastsWithLinks[broadcastsWithLinks.idsQueue.shift()]
+        }
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '">Copy URL</a>');
             jcontainer.find('.links').append('<a href="' + hls_url + '">Live M3U link</a>',
                 NODEJS ? [' | ', /*drkchange2*/$('<a style="font-size: 20px; color:#ED4D4D;">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response}))] : '',
                 ' | ', clipboardLink);
                 new ClipboardJS(clipboardLink.get(0));
+                /* drkchange7 */ broadcastsWithLinks[id] = {
+                    m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
+                    downloadLink : $('<a style="font-size: 20px; color:#ED4D4D;">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response})),
+                    clipboardLink : clipboardLink
+                };
         }
         if (replay_url) {
             var replay_base_url = replay_url.replace(/playlist.*m3u8/ig, '');
@@ -1642,6 +1655,11 @@ function getM3U(id, jcontainer) {
                         NODEJS ? [' | ', /*drkchange2*/$('<a style="font-size: 20px; color:#4350E9;">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response}))] : '',
                         ' | ', clipboardLink);
                     new ClipboardJS(clipboardLink.get(0));
+                    /* drkchange7 */ broadcastsWithLinks[id] = {
+                        m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
+                        downloadLink : $('<a style="font-size: 20px; color:#4350E9;">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response})),
+                        clipboardLink : clipboardLink
+                    };
                 }
             });
         }
