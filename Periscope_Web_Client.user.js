@@ -1621,20 +1621,20 @@ function getM3U(id, jcontainer) {
             params += 'Expires=0';
         }
         /* drkchange7 */ if(broadcastsWithLinks.idsQueue.indexOf(id) === -1){
-            broadcastsWithLinks.idsQueue.push(id)
+            broadcastsWithLinks.idsQueue.push(id);
         }
-        /* drkchange7 */if(broadcastsWithLinks.idsQueue.length > 30){
-            delete broadcastsWithLinks[broadcastsWithLinks.idsQueue.shift()]
+        /* drkchange7 */if(broadcastsWithLinks.idsQueue.length > 100){
+            delete broadcastsWithLinks[broadcastsWithLinks.idsQueue.shift()];
         }
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '">Copy URL</a>');
             jcontainer.find('.links').append('<a href="' + hls_url + '">Live M3U link</a>',
-                NODEJS ? [' | ', /*drkchange2*/$('<a style="font-size: 20px; color:#ED4D4D;">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response}))] : '',
+                NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadLiveLink">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response}))] : '',
                 ' | ', clipboardLink);
                 new ClipboardJS(clipboardLink.get(0));
                 /* drkchange7 */ broadcastsWithLinks[id] = {
                     m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
-                    downloadLink : $('<a style="font-size: 20px; color:#ED4D4D;">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response})),
+                    downloadLink : $('<a class="downloadLiveLink">Download</a>'),
                     clipboardLink : clipboardLink
                 };
         }
@@ -1652,12 +1652,12 @@ function getM3U(id, jcontainer) {
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download replay M3U</a>').click(saveAs.bind(null, m3u_text, filename));
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '">Copy URL</a>');
                     jcontainer.find('.links').append(link,
-                        NODEJS ? [' | ', /*drkchange2*/$('<a style="font-size: 20px; color:#4350E9;">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response}))] : '',
+                        NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadReplayLink">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response}))] : '',
                         ' | ', clipboardLink);
                     new ClipboardJS(clipboardLink.get(0));
                     /* drkchange7 */ broadcastsWithLinks[id] = {
-                        m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
-                        downloadLink : $('<a style="font-size: 20px; color:#4350E9;">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response})),
+                        m3uLink : $('<a>Download replay M3U</a>'),
+                        downloadLink : $('<a class="downloadReplayLink">Download</a>'),
                         clipboardLink : clipboardLink
                     };
                 }
@@ -1753,7 +1753,6 @@ function download(name, url, cookies, user_id, user_name, /* drkchange6 */whole_
     //////////////////////////////////////////////////////////////////* drkchange4 */ end
     ///////////////////////////////////////////////////////////////* drkchange6 */
     spawn.b_info = whole_response;
-    console.log(whole_response);
     spawn.folder_path = output_dir;
     spawn.file_name = name;
     childProcesses.push(spawn);
