@@ -1727,86 +1727,93 @@ function download(name, url, cookies, user_id, user_name, /* drkchange6 */whole_
         fs.mkdirSync(output_dir);
     } catch (e) {}
 
-    var ff_cookies = '';
-    if (cookies)
-        for (var i in cookies)
-            if (cookies[i].length)
-                ff_cookies += cookies[i] + '; path=/; domain=periscope.tv\n';
-    try {   // for executing from .nw
-        fs.chmodSync('ffmpeg', 0777);
-    } catch (e) {}
-    ///////////////////////////////////////////////////////////////* drkchange4 */ 
-    var downloader_cookies = '';
-    if (cookies)
-        for (var i in cookies)
-            if (cookies[i].length)
-                downloader_cookies += cookies[i] + '; ';
-    const spawn = require('child_process').spawn(process.execPath, [
-        'downloaderNode.js',
-        url,
-        output_dir,
-        name,
-        downloader_cookies
-    ],{
-        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-    });
-    //////////////////////////////////////////////////////////////////* drkchange4 */ end
-    ///////////////////////////////////////////////////////////////* drkchange6 */
-    spawn.b_info = whole_response;
-    spawn.folder_path = output_dir;
-    spawn.file_name = name;
-    childProcesses.push(spawn);
-    if(childProcesses.length > 50){
-        childProcesses.shift()
-    }
-    //////////////////////////////////////////////////////////////////* drkchange6 */ end
-    if (jcontainer) {
-        if (!spawn.pid)
-            jcontainer.append('FFMpeg not found. On Windows, place the static build into OpenPeriscope directory.');
-
-        spawn.stdout.on('data', function (data) {
-            _arrayBufferToString(data, function (d) {
-                jcontainer.append(d);
-            });
-        });
- 
-        spawn.stderr.on('data', function (data) {
-            _arrayBufferToString(data, function (d) {
-                jcontainer.append(d);
-            });
-        });
-
-        spawn.on('error', function (code) {
-            _arrayBufferToString(code, function (d) {
-                console.log('error: ', d);
-            });
-        });
-
-        // $(window).keydown(function(event){
-        //     spawn.stdin.write(String.fromCharCode(event.keyCode)+'\r\n');
-        //     //spawn.stdin.close();
-        // });
-    } else {
-        if (spawn.pid) {
-            ffLog = "";
-            function writeToLog(data) {
-                _arrayBufferToString(data, function (d) {
-                    ffLog += d;
+    /* drkchange8 */ output_name_check(null,true);
+    function output_name_check(num,rep) {
+        (rep && whole_response.state === "ENDED") ? (name = 'R_' + name) : '';
+        console.log('whole_response.state === "ENDED"',whole_response.state === "ENDED")
+        var x = num || 0;
+        fs.stat(output_dir + name + (num ? num : '') + '.ts', function (err, stats) {
+            if (stats) {
+                x += 1;
+                output_name_check(x, false);
+            } else {
+                num ? name = name + num : '';
+                ///////////////////////////////////////////////////////////////* drkchange4 */ 
+                var downloader_cookies = '';
+                if (cookies)
+                    for (var i in cookies)
+                        if (cookies[i].length)
+                            downloader_cookies += cookies[i] + '; ';
+                const spawn = require('child_process').spawn(process.execPath, [
+                    'downloaderNode.js',
+                    url,
+                    output_dir,
+                    name,
+                    downloader_cookies
+                ],{
+                    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
                 });
+                //////////////////////////////////////////////////////////////////* drkchange4 */ end
+                ///////////////////////////////////////////////////////////////* drkchange6 */
+                spawn.b_info = whole_response;
+                spawn.folder_path = output_dir;
+                spawn.file_name = name;
+                childProcesses.push(spawn);
+                if(childProcesses.length > 50){
+                    childProcesses.shift()
+                }
+                //////////////////////////////////////////////////////////////////* drkchange6 */ end
+                if (jcontainer) {
+                    if (!spawn.pid)
+                        jcontainer.append('FFMpeg not found. On Windows, place the static build into OpenPeriscope directory.');
+
+                    spawn.stdout.on('data', function (data) {
+                        _arrayBufferToString(data, function (d) {
+                            jcontainer.append(d);
+                        });
+                    });
+            
+                    spawn.stderr.on('data', function (data) {
+                        _arrayBufferToString(data, function (d) {
+                            jcontainer.append(d);
+                        });
+                    });
+
+                    spawn.on('error', function (code) {
+                        _arrayBufferToString(code, function (d) {
+                            console.log('error: ', d);
+                        });
+                    });
+
+                    // $(window).keydown(function(event){
+                    //     spawn.stdin.write(String.fromCharCode(event.keyCode)+'\r\n');
+                    //     //spawn.stdin.close();
+                    // });
+                } else {
+                    if (spawn.pid) {
+                        ffLog = "";
+                        function writeToLog(data) {
+                            _arrayBufferToString(data, function (d) {
+                                ffLog += d;
+                            });
+                        }
+                        spawn.stdout.on('data', writeToLog);
+                        spawn.stderr.on('data', writeToLog);
+                        spawn.on('close', function (code, signal) {
+                            ffLog+="\nClose: code "+code+", signal "+signal;
+                        });
+                        spawn.on('error', writeToLog.bind("disconnected"));
+                        spawn.on('disconnect', writeToLog);
+                        spawn.on('exit', function (code, signal) {
+                            ffLog+="\nExit: code "+code+", signal "+signal;
+                        });
+                    }
+                }
+                return spawn;
             }
-            spawn.stdout.on('data', writeToLog);
-            spawn.stderr.on('data', writeToLog);
-            spawn.on('close', function (code, signal) {
-                ffLog+="\nClose: code "+code+", signal "+signal;
-            });
-            spawn.on('error', writeToLog.bind("disconnected"));
-            spawn.on('disconnect', writeToLog);
-            spawn.on('exit', function (code, signal) {
-                ffLog+="\nExit: code "+code+", signal "+signal;
-            });
-        }
+        });
     }
-    return spawn;
+
 }
 function saveAs(data, filename) {
     if (NODEJS) {
