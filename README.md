@@ -12,6 +12,8 @@ Unofficial in-browser client for Periscope (userscript)
 * Preserve scroll position when switching to other subpages(drkchange5)
 * Download Manager (drkchange6)
 * Persistent links between refreshes (drkchange7)
+* Rename video if one with same name exists (drkchange8)
+* Copy link with name and cookies to be used in my periscope nodejs downloader,available in userscript only (drkchange9)
 * Dark theme (changes in style.css)
 * some other minor tweaks.
 
