@@ -1588,7 +1588,7 @@ function refreshList(jcontainer, title, /* drkchange0 */ refreshFrom) {  // use 
                 link.click(getM3U.bind(null, response[i].id, stream));
                 jcontainer.append(stream.append(link));
                 ids.push(response[i].id);
-                /* drkchange7 */ broadcastsWithLinks.hasOwnProperty(response[i].id) ? stream.find('.links').append(broadcastsWithLinks[response[i].id].m3uLink, NODEJS ? [' | ', broadcastsWithLinks[response[i].id].downloadLink] : '', ' | ',broadcastsWithLinks[response[i].id].clipboardLink) : '';
+                /* drkchange7 */ broadcastsWithLinks.hasOwnProperty(response[i].id) ? stream.find('.links').append(broadcastsWithLinks[response[i].id].m3uLink, NODEJS ? [' | ', broadcastsWithLinks[response[i].id].downloadLink] : '', ' | ',broadcastsWithLinks[response[i].id].clipboardLink, /* drkchange9 */ !NODEJS ? [' | ', broadcastsWithLinks[response[i].id].clipboardDowLink] : '') : '';
             }
             if (typeof response[0].n_watching == 'undefined')
                 Api('getBroadcasts', {
@@ -1620,6 +1620,14 @@ function getM3U(id, jcontainer) {
             }
             params += 'Expires=0';
         }
+        /* drkchange9 */var downloader_cookies = '';
+        /* drkchange9 */if (cookies){
+            for (var i in cookies){
+                if (cookies[i].length)
+                console.log('cooker2 : ',cookies[i].Name);
+                    downloader_cookies += cookies[i].Name + '=' + cookies[i].Value + '; ';
+            }
+        }
         /* drkchange7 */ if(broadcastsWithLinks.idsQueue.indexOf(id) === -1){
             broadcastsWithLinks.idsQueue.push(id);
         }
@@ -1628,14 +1636,17 @@ function getM3U(id, jcontainer) {
         }
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '">Copy URL</a>');
+            /* drkchange9 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">NodeDown</a>');
             jcontainer.find('.links').append('<a href="' + hls_url + '">Live M3U link</a>',
                 NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadLiveLink">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response}))] : '',
-                ' | ', clipboardLink);
+                ' | ', clipboardLink /* drkchange9 */, !NODEJS ? [' | ' ,clipboardDowLink] : '');
                 new ClipboardJS(clipboardLink.get(0));
+                /* drkchange9 */new ClipboardJS(clipboardDowLink.get(0));
                 /* drkchange7 */ broadcastsWithLinks[id] = {
                     m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
                     downloadLink : $('<a class="downloadLiveLink">Download</a>'),
-                    clipboardLink : clipboardLink
+                    clipboardLink : clipboardLink,
+                    /* drkchange9 */clipboardDowLink : clipboardDowLink
                 };
         }
         if (replay_url) {
@@ -1651,14 +1662,17 @@ function getM3U(id, jcontainer) {
                     var filename = 'playlist.m3u8';
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download replay M3U</a>').click(saveAs.bind(null, m3u_text, filename));
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '">Copy URL</a>');
+                    /* drkchange9 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">R_NodeDown</a>');
                     jcontainer.find('.links').append(link,
                         NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadReplayLink">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response}))] : '',
-                        ' | ', clipboardLink);
+                        ' | ', clipboardLink /* drkchange9 */, !NODEJS ? [' | ' ,clipboardDowLink] : '');
                     new ClipboardJS(clipboardLink.get(0));
+                    /* drkchange9 */new ClipboardJS(clipboardDowLink.get(0));
                     /* drkchange7 */ broadcastsWithLinks[id] = {
                         m3uLink : $('<a>Download replay M3U</a>'),
                         downloadLink : $('<a class="downloadReplayLink">Download</a>'),
-                        clipboardLink : clipboardLink
+                        clipboardLink : clipboardLink,
+                        /* drkchange9 */clipboardDowLink : clipboardDowLink
                     };
                 }
             });
@@ -1730,7 +1744,6 @@ function download(name, url, cookies, user_id, user_name, /* drkchange6 */whole_
     /* drkchange8 */ output_name_check(null,true);
     function output_name_check(num,rep) {
         (rep && whole_response.state === "ENDED") ? (name = 'R_' + name) : '';
-        console.log('whole_response.state === "ENDED"',whole_response.state === "ENDED")
         var x = num || 0;
         fs.stat(output_dir + name + (num ? num : '') + '.ts', function (err, stats) {
             if (stats) {
