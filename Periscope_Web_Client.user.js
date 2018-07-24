@@ -2040,7 +2040,7 @@ function dManagerDescription(jcontainer) {
                             CProcess.errorsLog.push(msg);
                         }
                     }
-                    if (msgPrefix === 'Uptime') {
+                    if (msgPrefix === 'Uptime:') {
                         dManagerTimer.html(msg);
                         CProcess.lastUptime = msg;
                     } else if (typeof msg === 'string') {
