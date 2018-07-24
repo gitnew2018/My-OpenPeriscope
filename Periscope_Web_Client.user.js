@@ -1636,17 +1636,21 @@ function getM3U(id, jcontainer) {
         }
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '">Copy URL</a>');
+            var clipboardClone = clipboardLink.clone(); //clones prevent links from disappearing.
             /* drkchange9 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">NodeDown</a>');
+            /* drkchange9 */var clDowClone = clipboardDowLink.clone();
             jcontainer.find('.links').append('<a href="' + hls_url + '">Live M3U link</a>',
                 NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadLiveLink">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange6 */whole_response: _whole_response}))] : '',
                 ' | ', clipboardLink /* drkchange9 */, !NODEJS ? [' | ' ,clipboardDowLink] : '');
                 new ClipboardJS(clipboardLink.get(0));
+                /* drkchange7 */new ClipboardJS(clipboardClone.get(0));
                 /* drkchange9 */new ClipboardJS(clipboardDowLink.get(0));
+                /* drkchange9 */new ClipboardJS(clDowClone.get(0));
                 /* drkchange7 */ broadcastsWithLinks[id] = {
                     m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
                     downloadLink : $('<a class="downloadLiveLink">Download</a>'),
-                    clipboardLink : clipboardLink,
-                    /* drkchange9 */clipboardDowLink : clipboardDowLink
+                    clipboardLink : clipboardClone,
+                    /* drkchange9 */clipboardDowLink : clDowClone
                 };
         }
         if (replay_url) {
@@ -1662,17 +1666,21 @@ function getM3U(id, jcontainer) {
                     var filename = 'playlist.m3u8';
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download replay M3U</a>').click(saveAs.bind(null, m3u_text, filename));
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '">Copy URL</a>');
+                    var clipboardClone = clipboardLink.clone();
                     /* drkchange9 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">R_NodeDown</a>');
+                    /* drkchange9 */var clDowClone = clipboardDowLink.clone();
                     jcontainer.find('.links').append(link,
                         NODEJS ? [' | ', /*drkchange2*/$('<a class="downloadReplayLink">Download</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange6 */ whole_response: _whole_response}))] : '',
                         ' | ', clipboardLink /* drkchange9 */, !NODEJS ? [' | ' ,clipboardDowLink] : '');
                     new ClipboardJS(clipboardLink.get(0));
+                    /* drkchange7 */new ClipboardJS(clipboardClone.get(0));
                     /* drkchange9 */new ClipboardJS(clipboardDowLink.get(0));
+                    /* drkchange9 */new ClipboardJS(clDowClone.get(0));
                     /* drkchange7 */ broadcastsWithLinks[id] = {
                         m3uLink : $('<a>Download replay M3U</a>'),
                         downloadLink : $('<a class="downloadReplayLink">Download</a>'),
-                        clipboardLink : clipboardLink,
-                        /* drkchange9 */clipboardDowLink : clipboardDowLink
+                        clipboardLink : clipboardClone,
+                        /* drkchange9 */clipboardDowLink : clDowClone
                     };
                 }
             });
@@ -2032,7 +2040,7 @@ function dManagerDescription(jcontainer) {
                             CProcess.errorsLog.push(msg);
                         }
                     }
-                    if (msgPrefix === 'Up') {
+                    if (msgPrefix === 'Uptime') {
                         dManagerTimer.html(msg);
                         CProcess.lastUptime = msg;
                     } else if (typeof msg === 'string') {
