@@ -1,9 +1,9 @@
 {
   "name": "openperiscope",
-  "version": "0.1",
-  "description": "My-Unofficial Periscope client",
+  "version": "1.8.0",
+  "description": "Unofficial Periscope client",
   "license": "GPL-2.0",
-  "repository": "gitnew2018/My-OpenPeriscope",
+  "repository": "Pmmlabs/OpenPeriscope",
   "dependencies": {
     "ws": "1.1.1"
   },
@@ -13,7 +13,7 @@
     "plugin": true
   },
   "single-instance": false,
-  "chromium-args": "--data-path=userdata",
+  "chromium-args":"--data-path=userdata",
   "window": {
     "icon": "images/openperiscope.png",
     "toolbar": true,
