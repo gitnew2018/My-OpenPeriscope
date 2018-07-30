@@ -457,8 +457,10 @@ pre {
 }
 
 #chat .user {
-    color: #2927cc;
+    color: #7F99EA;
     cursor: pointer;
+    font-size: 0.8em;
+    vertical-align: top;
 }
 
 #userlist .user {
@@ -508,6 +510,53 @@ pre {
 
 .error {
     color: red;
+}
+
+.messageBox{
+    display: flex;
+    margin: 0.2rem 0 0.2rem 0;
+    background-color: #242424;
+}
+
+.chatUserImg{
+    height: 45px;
+    background-color: gray;
+    min-width: 45px;
+    display: -webkit-inline-box;
+    background-size: cover;
+    opacity: 0.8;
+    border-top-left-radius: 10px;
+}
+.chatUserImg:hover{
+    opacity: 1;
+}
+.messageTime{
+    opacity: 0.2;
+    font-size: 0.8em;
+    vertical-align: top;
+}
+
+.messageBox:hover .messageTime{
+    opacity: 1;
+}
+
+.chatMessage {
+    padding: 5px;
+}
+
+.bigThumbnail{
+    height: 100px;
+    min-width: 100px;
+}
+
+.displayName{
+    font-size: 0.8em;
+    cursor: pointer;
+    vertical-align: top;
+}
+
+.hidename{
+    display: none;
 }
 
 /* EMOJI */
@@ -697,14 +746,17 @@ span.sProducer {
     border-right: 10px solid #ED4D4D;
     min-height: 50px;
 }
+
 .card.finished {
     border-right: 10px solid #4350E9;
     min-height: 50px;
 }
+
 .downloadLiveLink {
     font-size: 20px;
     color:#ED4D4D;
 }
+
 .downloadReplayLink {
     font-size: 20px;
     color:#4350E9;

@@ -4,18 +4,22 @@ Unofficial in-browser client for Periscope (userscript)
 
 ### Features added in my version
 
-* New broadcasts after refresh are highlited (marked in code as /* drkchange0 */)
-* Now thumbnail previews of replays open in new window(drkchange1)
-* Download button changes(drkchange2)
-* You can select users who's braodcasts will be recorded(drkchange3)
-* New video downloader based on Node.js. It's more reliable imho(drkchange4 and whole downloaderNode.js file)
-* Preserve scroll position when switching to other subpages(drkchange5)
-* Download Manager (drkchange6)
-* Persistent links between refreshes (drkchange7)
-* Rename video if one with same name exists (drkchange8)
-* Copy link with name and cookies to be used in my periscope nodejs downloader,available in userscript only (drkchange9)
+* New broadcasts after refresh are highlited (marked in code as /* drkchange00 */)
+* Now thumbnail previews of replays open in new window(drkchange01)
+* Download button changes(drkchange02)
+* You can select users who's braodcasts will be recorded(drkchange03)
+* New video downloader based on Node.js. It's more reliable imho(drkchange04 and whole downloaderNode.js file)
+* Preserve scroll position when switching to other subpages(drkchange05)
+* Download Manager (drkchange06)
+* Persistent links between refreshes (drkchange07)
+* Rename video if one with same name exists (drkchange08)
+* Copy link with name and cookies to be used in my periscope nodejs downloader,available in userscript only (drkchange09)
+* Display full size avatars from google profiles (drkchange10)
 * Dark theme (changes in style.css)
 * some other minor tweaks.
+*(added after 1 release)
+* Option to log broadcasts to text file with link to replay(drkchange11)
+* Profile avatar and link in chat messages + some styling (drkchange12 and style.css)
 
 ### Using as standalone application
 
