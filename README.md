@@ -17,7 +17,7 @@ Unofficial in-browser client for Periscope (userscript)
 * Display full size avatars from google profiles (drkchange10)
 * Dark theme (changes in style.css)
 * some other minor tweaks.
-*(added after 1 release)
+* -----(added after 1 release)-----
 * Option to log broadcasts to text file with link to replay(drkchange11)
 * Profile avatar and link in chat messages + some styling (drkchange12 and style.css)
 
