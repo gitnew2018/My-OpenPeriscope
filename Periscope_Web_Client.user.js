@@ -9,6 +9,7 @@
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
+// @connect     pscp.tv
 // @connect     twitter.com
 // @connect     digits.com
 // @require     https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.js
@@ -909,7 +910,7 @@ Chat: function () {
                         $(this).next().children().first().toggleClass("hidename");
                     });
                     var messageTime = '<span class="messageTime">[' + zeros(date.getHours()) + ':' + zeros(date.getMinutes()) + ':' + zeros(date.getSeconds()) + '] </span>';
-                    var display_name = $('<span class="displayName hidename">' + getFlag(event.locale) + ' ' + emoji.replace_unified(event.display_name || event.displayName) + '</span>').click(switchSection.bind(null, 'User', event.user_id));
+                    var display_name = $('<span class="displayName hidename">' + (event.locale ? getFlag(event.locale) : '') + ' ' + emoji.replace_unified(event.display_name || event.displayName || ' ') + '</span>').click(switchSection.bind(null, 'User', event.user_id));
                     var username = $('<span class="user">&lt;' + event.username + '&gt;</span>').click(function () { // insert username to text field
                         textBox.val(textBox.val() + '@' + $(this).text().substr(1, $(this).text().length - 2) + ' ');
                         textBox.focus();
@@ -1173,6 +1174,13 @@ Chat: function () {
                     });
                 };
 
+                /* drkchange13 */function uuid() {//function from stackoverflow
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+
                 var sendMessage = function (customtype) {
                     var timestamp = Math.floor(Date.now() / 1000);
                     var ntpstamp = parseInt((timestamp + 2208988800).toString(16) + '00000000', 16); // timestamp in NTP format
@@ -1187,7 +1195,7 @@ Chat: function () {
                         timestamp: timestamp,
                         remoteID: loginTwitter.user.id,
                         username: loginTwitter.user.username,
-                        uuid: "OpenPeriscope" + (Math.random()+'').replace('.',''),
+                        uuid: /* drkchange13 */uuid(),// no longer identifie yourself as open periscope user on comment or heart.
                         signer_token: broadcast.signer_token,
                         participant_index: broadcast.participant_index,
                         type: customtype || 1,    // "text message"

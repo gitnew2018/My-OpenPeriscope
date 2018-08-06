@@ -9,6 +9,7 @@
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
+// @connect     pscp.tv
 // @connect     twitter.com
 // @connect     digits.com
 // @require     https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.js
