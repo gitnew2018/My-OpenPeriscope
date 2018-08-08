@@ -1660,7 +1660,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
                     }
                     
                     stream.find('.links').append(
-                        /* drkchange15 */settings.showM3Ulinks ? broadcastsWithLinks[response[i].id].m3uLink : '',settings.showM3Ulinks ? ' | ' : '',
+                        /* drkchange15 */settings.showM3Ulinks ? broadcastsWithLinks[response[i].id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
                         (NODEJS ? broadcastsWithLinks[response[i].id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''),clipboardLink,
                         /* drkchange09 */ ((!NODEJS && /* drkchange16 */settings.showNodeDownLinks) ? [' | ', clipboardDowLink] : ''), '<br/>',
                         /* drkchange15 */(pr && settings.showM3Ulinks && settings.showPRlinks) ? broadcastsWithLinks[response[i].id].PRm3uLink.clone(true,true) : '',
@@ -1691,8 +1691,11 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
     };
 }
 function getM3U(id, jcontainer) {
-    jcontainer.find('.links').empty();
+    var linksContainer = jcontainer.find('.links');
+    linksContainer.addClass('oldLinks');
     urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
+        !_partial_replay ? linksContainer.empty(): '';
+        linksContainer.removeClass('oldLinks');
         var params = '';
         var ffmpeg_cookies = '';
         if (cookies && cookies.length) {
@@ -1728,7 +1731,7 @@ function getM3U(id, jcontainer) {
                 /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
 
                 /* drkchange07 */ broadcastsWithLinks[id] = {
-                    m3uLink : '<a href="' + hls_url + '">Live M3U link</a>',
+                    m3uLink : $('<a href="' + hls_url + '">Live M3U link</a>'),
                     downloadLink : downloadLink,
                     clipboardLink : clipboardLink.clone(),
                     /* drkchange09 */clipboardDowLink : clipboardDowLink.clone()

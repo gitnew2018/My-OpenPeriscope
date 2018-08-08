@@ -429,6 +429,9 @@ pre {
     min-height: 30px;
     line-height: 25px;
 }
+.oldLinks a{
+    color: gray;
+}
 /* CHAT */
 
 #userlist {
