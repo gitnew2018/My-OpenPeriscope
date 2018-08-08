@@ -21,6 +21,10 @@ Unofficial in-browser client for Periscope (userscript)
 * Option to log broadcasts to text file with link to replay(drkchange11)
 * Profile avatar and link in chat messages + some styling (drkchange12 and style.css)
 * Generate proper uuid for chat messages (drkchange13).
+* Generate partial replay links (drkchange14)
+* M3U links optional, on/off in settings (drkchange15)
+* PeriscopeDownloader links optional, on/off in settings (drkchange16)
+* Generated links stay grayed-out when no response is received (drkchange17)
 
 ### Using as standalone application
 
