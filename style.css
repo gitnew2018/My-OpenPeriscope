@@ -428,6 +428,7 @@ pre {
 .links {
     min-height: 55px;
     line-height: 25px;
+    display: table;
 }
 .oldLinks a{
     color: gray;

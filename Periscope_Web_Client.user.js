@@ -1703,7 +1703,7 @@ function getM3U(id, jcontainer) {
     replayLContainer.addClass('oldLinks');
     urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
         /* drkchange17 */!_partial_replay ? (liveLContainer.removeClass('oldLinks'), liveLContainer.children().length ? liveLContainer.empty() : '') : '';
-        /* drkchange17 */ (!_partial_replay && replay_url) ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
+        /* drkchange17 */ (!_partial_replay && replay_url) ? (replayLContainer.removeClass('oldLinks'), (replayLContainer.children().length ?  replayLContainer.empty() : '')) : '';
         /* drkchange17 */ _partial_replay ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
         var params = '';
         var ffmpeg_cookies = '';
@@ -1715,10 +1715,9 @@ function getM3U(id, jcontainer) {
             params += 'Expires=0';
         }
         /* drkchange09 */var downloader_cookies = '';
-        /* drkchange09 */if (cookies){
-            for (var i in cookies){
-                if (cookies[i].length)
-                    downloader_cookies += cookies[i].Name + '=' + cookies[i].Value + '; ';
+        /* drkchange09 */ if (cookies && cookies.length) {
+            for (var i in cookies) {
+                downloader_cookies += cookies[i].Name + '=' + cookies[i].Value + '; ';
             }
         }
         /* drkchange07 */ if(broadcastsWithLinks.idsQueue.indexOf(id) === -1){
