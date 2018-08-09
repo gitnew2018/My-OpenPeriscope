@@ -1517,6 +1517,9 @@ Edit: function () {
         /* drkchange16 */var show_nodeDown_links = $('<label><input type="checkbox" ' + (settings.showNodeDownLinks ? 'checked' : '') + '/> Show node periscopeDownloader links</label>').click(function (e) {
             setSet('showNodeDownLinks', e.target.checked);
         });
+        /* drkchange16 */var show_nodeDown_linksPrv = $('<label><input type="checkbox" style="margin-left: 1.5em;"' + (settings.showNodeDownLinksPrv ? 'checked' : '') + '/> Private broadcasts only</label>').click(function (e) {
+            setSet('showNodeDownLinksPrv', e.target.checked);
+        });
     }
 
     /* drkchange15 */var show_m3u_links = $('<label><input type="checkbox" ' + (settings.showM3Ulinks ? 'checked' : '') + '/> Show M3U links</label>').click(function (e) {
@@ -1546,6 +1549,7 @@ Edit: function () {
         /* drkchange15 */'<br>', show_m3u_links,
         /* drkchange14 */'<br>', show_partial_links,
         /* drkchange16 */'<br>', show_nodeDown_links,
+        /* drkchange16 */'<br>', show_nodeDown_linksPrv,
         /* drkchange change order*/'<br/><hr color="#E0E0E0" size="1">' +
         '<h3>Periscope settings</h3>',
         settingsContainer, buttonSettings
@@ -1662,13 +1666,13 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
                     stream.find('.links').append(
                         /* drkchange15 */settings.showM3Ulinks ? broadcastsWithLinks[response[i].id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
                         (NODEJS ? broadcastsWithLinks[response[i].id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''),clipboardLink,
-                        /* drkchange09 */ ((!NODEJS && /* drkchange16 */settings.showNodeDownLinks) ? [' | ', clipboardDowLink] : ''), '<br/>',
+                        /* drkchange09 */ ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked))) ? [' | ', clipboardDowLink] : ''), '<br/>',
                         /* drkchange15 */(pr && settings.showM3Ulinks && settings.showPRlinks) ? broadcastsWithLinks[response[i].id].PRm3uLink.clone(true,true) : '',
                         (pr && settings.showM3Ulinks && settings.showPRlinks) ? ' | ' : '',
                         /* drkchange14 */(pr && settings.showPRlinks && NODEJS ? [broadcastsWithLinks[response[i].id].PRdownloadLink.clone(true,true),
                         ' | '] : ''),/* drkchange14 */(pr && settings.showPRlinks)? PRclipboardLink : '',
-                        /* drkchange14 */(pr && !NODEJS && /* drkchange16 */settings.showNodeDownLinks && settings.showPRlinks) ?/* drkchange09 */  ' | ' : '',
-                        (pr && !NODEJS && /* drkchange16 */settings.showNodeDownLinks && settings.showPRlinks) ? PRclipboardDowLink :'', '<br/>'
+                        /* drkchange14 */(pr && !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked)) && settings.showPRlinks) ?/* drkchange09 */  ' | ' : '',
+                        (pr && !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked)) && settings.showPRlinks) ? PRclipboardDowLink :'', '<br/>'
                     );
                 }
             }
@@ -1691,11 +1695,14 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
     };
 }
 function getM3U(id, jcontainer) {
-    /* drkchange17 */var linksContainer = jcontainer.find('.links');
-    /* drkchange17 */linksContainer.addClass('oldLinks');
+    var liveLContainer = jcontainer.find('.responseLinks');
+    var replayLContainer = jcontainer.find('.responseLinksReplay');
+    liveLContainer.addClass('oldLinks');
+    replayLContainer.addClass('oldLinks');
     urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
-        /* drkchange17 */!_partial_replay ? linksContainer.empty(): '';
-        /* drkchange17 */linksContainer.removeClass('oldLinks');
+        /* drkchange17 */!_partial_replay ? (liveLContainer.removeClass('oldLinks'), liveLContainer.children().length ? liveLContainer.empty() : '') : '';
+        /* drkchange17 */!_partial_replay ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ? replayLContainer.empty() : '') : '';
+        /* drkchange17 */ _partial_replay ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
         var params = '';
         var ffmpeg_cookies = '';
         if (cookies && cookies.length) {
@@ -1722,11 +1729,12 @@ function getM3U(id, jcontainer) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '">Copy URL</a>');
             /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">NodeDown</a>');
             var downloadLink =/*drkchange02*/$('<a class="downloadLiveLink">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange06 */broadcast_info: _broadcast_info}));
-            linksContainer.append(
+            liveLContainer.append(
                 /* drkchange15 */settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', /* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
                 NODEJS ? downloadLink : '',
                 (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
-                ((!NODEJS && /* drkchange16 */settings.showNodeDownLinks) ? [' | ' ,clipboardDowLink] : ''), '<br/>');
+                ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+            );
                 new ClipboardJS(clipboardLink.get(0));
                 /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
 
@@ -1750,14 +1758,14 @@ function getM3U(id, jcontainer) {
                     m3u_text = m3u_text.responseText.replace(/(^chunk_.+)/gm, replay_base_url + '$1'); /* drkchange fix regex */
                     var filename = 'playlist.m3u8';
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download' + /* drkchange14 */(_partial_replay ? ' PR ' : ' replay ' ) + 'M3U</a>').click(saveAs.bind(null, m3u_text, filename));
-                    var clipboardLink = $('<a data-clipboard-text="' + replay_url + /* drkchange14 */(_partial_replay ? '">Copy PR URL' : '">Copy URL') + '</a>');
+                    var clipboardLink = $('<a data-clipboard-text="' + replay_url + /* drkchange14 */(_partial_replay ? '">Copy PR_URL' : '">Copy R_URL') + '</a>');
                     /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + /* drkchange14 */(_partial_replay ? '">PR_NodeDown</a>' : '">R_NodeDown</a>' ));
                     var downloadLink = /*drkchange02*/$('<a class="downloadReplayLink">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>').click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
-                    linksContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
+                    replayLContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
                         NODEJS ? downloadLink : '',
                         (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
-                        ((!NODEJS && /* drkchange16 */settings.showNodeDownLinks) ? [' | ' ,clipboardDowLink] : ''),
-                        '<br/>');
+                        ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+                    );
                     new ClipboardJS(clipboardLink.get(0));
                     /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
 
@@ -2000,7 +2008,7 @@ function getDescription(stream) {
             + (stream.friend_chat ? '<span class="friend_chat" title="Chat only for friends"/>' : '')
             + (stream.is_locked ? '<span class="is_locked" title="Locked"/>' : ''),
             '<br/><span class="lang right" title="Language ' + stream.language + '">' + getFlag(stream.language) + '</span>',
-            (stream.has_location ? $('<span style="cursor:pointer;">' + stream.country + ', ' + stream.city + '</span>').click(switchSection.bind(null, 'Map', stream.ip_lat + ',' + stream.ip_lng)) : ''), '<div class="links" />');
+            (stream.has_location ? $('<span style="cursor:pointer;">' + stream.country + ', ' + stream.city + '</span>').click(switchSection.bind(null, 'Map', stream.ip_lat + ',' + stream.ip_lng)) : ''), '<div class="links"><div class="responseLinks"/><div class="responseLinksReplay"/></div>');
     return description[0];
 }
 function getUserDescription(user) {
@@ -2080,7 +2088,7 @@ function dManagerDescription(jcontainer) {
                 var CProcess = childProcesses[i];
                 var broadcastInfo = CProcess.b_info;
                 var filePath = CProcess.folder_path;
-                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>');
+                /* drkchange18 */var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').on('error',function(){this.src = broadcastInfo.profile_image_url, $(this).addClass('avatar')});
                 var dManager_username = $('<div class="username">' + emoji.replace_unified(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</div>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
                 
                 var brdcstTitle = $('<a class="b_title">' + emoji.replace_unified(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
