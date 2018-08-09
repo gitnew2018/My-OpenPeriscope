@@ -1663,10 +1663,12 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
                         new ClipboardJS(PRclipboardDowLink.get(0));
                     }
                     
-                    stream.find('.links').append(
+                    stream.find('.responseLinks').append(
                         /* drkchange15 */settings.showM3Ulinks ? broadcastsWithLinks[response[i].id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
                         (NODEJS ? broadcastsWithLinks[response[i].id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''),clipboardLink,
-                        /* drkchange09 */ ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked))) ? [' | ', clipboardDowLink] : ''), '<br/>',
+                        /* drkchange09 */ ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked))) ? [' | ', clipboardDowLink] : ''), '<br/>'
+                    );
+                    stream.find('.responseLinksReplay').append(
                         /* drkchange15 */(pr && settings.showM3Ulinks && settings.showPRlinks) ? broadcastsWithLinks[response[i].id].PRm3uLink.clone(true,true) : '',
                         (pr && settings.showM3Ulinks && settings.showPRlinks) ? ' | ' : '',
                         /* drkchange14 */(pr && settings.showPRlinks && NODEJS ? [broadcastsWithLinks[response[i].id].PRdownloadLink.clone(true,true),
@@ -1701,7 +1703,7 @@ function getM3U(id, jcontainer) {
     replayLContainer.addClass('oldLinks');
     urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
         /* drkchange17 */!_partial_replay ? (liveLContainer.removeClass('oldLinks'), liveLContainer.children().length ? liveLContainer.empty() : '') : '';
-        /* drkchange17 */!_partial_replay ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ? replayLContainer.empty() : '') : '';
+        /* drkchange17 */ (!_partial_replay && replay_url) ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
         /* drkchange17 */ _partial_replay ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
         var params = '';
         var ffmpeg_cookies = '';
