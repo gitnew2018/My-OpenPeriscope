@@ -321,7 +321,7 @@ var Notifications = {
                                             getURL(a1, a2);
                                         }, 500, _broadcast_info.id, getReplayUrl);
                                     }else if(replay){
-                                        limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 10, [])
+                                        limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 100, [])
                                         var ffmpeg_cookies = [];
                                         /* drkchange09 */var downloader_cookies = '';
                                         /* drkchange09 */if (cookies && cookies.length) {
@@ -1944,7 +1944,7 @@ function getM3U(id, jcontainer) {
                 downloader_cookies += cookies[i].Name + '=' + cookies[i].Value + '; ';
             }
         }
-        limitAddIDs(broadcastsWithLinks, id, 10, [])
+        limitAddIDs(broadcastsWithLinks, id, 100, [])
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '" class="linkLive button2" title="Copy live broadcast URL">Copy URL</a>');
             /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="button2">NodeDown</a>');
