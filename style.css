@@ -414,6 +414,8 @@ pre {
     background-color: #222222;
     border-radius: 2px;
     min-width: 350px;
+    border-left: 5px solid;
+    padding-left: 5px;
 }
 
 .card .description {
@@ -421,19 +423,23 @@ pre {
     padding-right: 10px;
 }
 
-.card.RUNNING img {
+.card.RUNNING {
     border-color: #ED4D4D;
-    ;
 }
 
-.card.ENDED img {
+.card.RUNNING a.broadcastTitle {
+    color: #ED7272;
+}
+.card.ENDED {
     border-color: #4350E9;
+}
+
+.card.TIMED_OUT {
+    border-color: #039be5;;
 }
 
 .card img {
     height: 128px;
-    border-left: 5px solid;
-    padding-left: 5px;
     margin-top: -10px;
     min-width: 72px;
 }
@@ -748,12 +754,12 @@ select:focus {
 }
 
 span.sProducer {
-    left: -11px;
-    top: -9px;
+    left: -1px;
+    top: -8px;
     margin-left: -70px;
     position: relative;
     color: rgba(255, 255, 255, 0.6);
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.4);
     padding: 2px;
 }
 
