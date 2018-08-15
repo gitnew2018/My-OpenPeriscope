@@ -25,11 +25,12 @@ Unofficial in-browser client for Periscope (userscript)
 * M3U links optional, on/off in settings (drkchange15)
 * PeriscopeDownloader links optional, on/off in settings (drkchange16)
 * Generated links stay grayed-out when no response is received (drkchange17)
-* Changed Following broadcast feed to include deleted broadcasts and in changed order. (drkchange18)
+* Changed Following broadcast feed to include deleted broadcasts and now broadcasts appear in new order. (drkchange18)
 * "Sort by watching" is now toggle(drkchange19)
 * "Show interesting only" - displays only the ones that you clicked on "get stream link"(drkchange20)
 * When "Enable automatic downloading of the following items" or "Enable notifications" is on, replay links are saved and displayed on their boradcast card(drkchange21)
 * In standalone version transitions in css caused heavy cpu usage. Now all are off.
+* Added checkbox to activate auto getting partial replay links(drkchange22)
 
 ### Using as standalone application
 
