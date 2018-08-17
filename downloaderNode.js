@@ -32,6 +32,7 @@ var g_m3u_url = process.argv[2],
     g_timeToRetry = 10, //in seconds
     g_retrying = false,
     g_beginnig = true, //skip first timeout
+    g_timeoutInterval,
     vod = false;
 
 get_playlist(g_m3u_url);
@@ -148,16 +149,20 @@ function process_playlist(vid_chunks) {
 }
 
 function timeout_check(time) {
-    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd && !g_beginnig) || (g_live_stream === null && !g_beginnig)) {
+    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd) || (g_live_stream === null && !g_beginnig)) {
+        var counter = 3;
         g_timingOut = true;
-
         g_liveTimeout = setTimeout(function () {
-            process.send('Timed out');
+            process.send('Time out');
             process.exit();
         }, time * 1000);
-        process.send('Timing out...');
+        g_timeoutInterval = setInterval(function(){
+            counter++;
+            counter > 10 ? process.send('No new video chunks in the last ' + counter + 's') : '';
+        }, 1000);
     } else if (((g_chunksToDownload.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
+        clearInterval(g_timeoutInterval)
         g_timingOut = false;
         process.send(' ');
     }
@@ -228,6 +233,9 @@ function download_live() {
                     process.send(e);
                     throw e;
                 }
+            }).setTimeout(30000, function() {
+                console.log("request timeout");
+                    this.abort();
             });
         }
     }
@@ -292,6 +300,9 @@ function download_vod(file_url, chunk_name, chunksToDownload) {
             process.send(e);
             throw e;
         }
+    }).setTimeout(30000, function() {
+        console.log("request timeout");
+            this.abort();
     });
 }
 
@@ -377,6 +388,9 @@ function existing_chunks_checker() {
             } else if (requestsCounter === numAtOnce) {
                 divide_requests();
             }
+        }).setTimeout(10000, function() {
+            console.log("request headers timeout");
+                this.abort();
         });
     }
 
@@ -385,9 +399,8 @@ function existing_chunks_checker() {
 function concat_all() {
     var i = 0;
     process.send('Finished downloading, concatenating video parts.');
-    concat_recur(i);
 
-    function concat_recur(i) {
+    (function concat_recur(i) {
         if (i === g_allChunks.length) { //finished concatenating
             var removedNum = 0;
             g_allChunks.forEach(function (item_to_del) { // delete all video chunks
@@ -435,7 +448,7 @@ function concat_all() {
                 }
             });
         }
-    }
+    })(i)
 }
 
 function formatTime(time) {
