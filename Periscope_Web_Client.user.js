@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1
+// @version     0.1.1
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -329,9 +329,9 @@ var Notifications = {
                                                 downloader_cookies += cookies[k].Name + '=' + cookies[k].Value + '; ';
                                             }
                                         }
-                                        var clipboardLink = $('<a data-clipboard-text="' + replay + '" class="linkReplay button2" title="Copy ' + (_partial_replay ? 'partial ' : '') + 'replay URL">'+ (_partial_replay ? 'PR':'copy') +'</a>');
+                                        var clipboardLink = $('<a data-clipboard-text="' + replay + '" class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Copy ' + (_partial_replay ? 'partial ' : '') + 'replay URL">'+ (_partial_replay ? 'Copy PR_URL':'Copy R_URL') +'</a>');
                                         /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">R_NodeDown</a>');
-                                        var downloadLink =/*drkchange02*/$('<a class="linkReplay button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: replay, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
+                                        var downloadLink =/*drkchange02*/$('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: replay, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                                         new ClipboardJS(clipboardLink.get(0));
                                         var refreshIndicator = $('<a> ◄</>')
                                         setTimeout(function(){refreshIndicator.hide(); }, 2000);
@@ -817,7 +817,62 @@ Following: function () {
 Following2: function () {
     var result = $('<div/>');
     var button = $('<a class="button">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList2(result /* drkchange00 */ , null, 'following2')));
-    $('#right').append($('<div id="Following2"/>').append(button, result));
+
+    /* drkchange23 */var hideEnded = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideEnded ? 'checked' : '') + '/> Hide non-live</label>').click(function (e) {
+        var cardsToHide = $('#Following2').find('.card').not('.RUNNING').not('.newHighlight');
+        broadcastsCache.filters.hideEnded = e.target.checked;
+        if(e.target.checked) {
+            cardsToHide.hide();
+        }else{
+            cardsToHide.show();
+        }
+    });
+    /* drkchange23 */var hideProducer = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideProducer ? 'checked' : '') + '/> Hide non-private producer</label>').click(function (e) {
+        var cardsToHide = $('#Following2').find('.producer').not('.newHighlight').not('.private');
+        broadcastsCache.filters.hideProducer = e.target.checked;
+        if(e.target.checked) {
+            cardsToHide.hide();
+        }else{
+            cardsToHide.show();
+        }
+    });
+    /* drkchange23 */var languagesFilter = $('<fieldset class="languageFilter"><legend>Languages:</legend></fieldset>');
+    /* drkchange23 */for(var i in broadcastsCache.filters.languages){
+        languagesFilter.append(
+            $('<label><input type="checkbox"' + (broadcastsCache.filters.languagesToHide.some(function(r){return broadcastsCache.filters.languages[i].indexOf(r) >= 0}) ? '' : 'checked') + '/> ' + i + '</label>').change(
+            {param: broadcastsCache.filters.languages[i]}, function(e){
+                var toHideList = broadcastsCache.filters.languagesToHide;
+                var arr = (typeof e.data.param != 'string') ? 'true' : '';
+                if(arr){
+                    if(e.target.checked){
+                        e.data.param.forEach(function(a){
+                            toHideList.splice(toHideList.indexOf(a),1);
+                            $('#Following2').find('.lang[title="Language ' + a + '"]').parent().parent().show();
+                        });
+                    }else{
+                        e.data.param.forEach(function(a){
+                            toHideList.push(a)
+                            $('#Following2').find('.lang[title="Language ' + a + '"]').parent().parent().hide();
+                        });
+                    }
+                }else{
+                    var cardsToHide = $('#Following2').find('.lang[title="Language ' + e.data.param + '"]').parent().parent();
+                    if(e.target.checked){
+                        toHideList.splice(toHideList.indexOf(e.data.param),1);
+                        cardsToHide.show()
+                    }else{
+                        toHideList.push(e.data.param);
+                        cardsToHide.hide();
+                    }
+                }
+            })
+        );
+    }
+    /* drkchange23 */var filterBox = $('<div id="followingFilters"></div>').hide();
+    /* drkchange23 */filterBox.append(languagesFilter, hideEnded, hideProducer)
+    /* drkchange23 */var filtersToggle = $('<a class="button" style="float:right">Filters</a></br>').click(function(){filterBox.toggle()});
+
+    $('#right').append($('<div id="Following2"/>').append(button, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result));
     button.click();
 },
 Create: function () {
@@ -1781,7 +1836,38 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
     idsQueue: [],
     /* drkchange00 */oldBroadcastsList: [],
     /* drkchange20 */interestingList: [],
-    /* drkchange22 */autoGettinList: []
+    /* drkchange22 */autoGettinList: [],
+    /* drkchange23 */filters:{
+        hideProducer: false,
+        hideEnded: false,
+        languages:{
+            Arabic: 'ar',
+            Armenian: 'hy',
+            Chinese: 'zh',
+            Danish: 'da',
+            English: ['en','us','uk'],
+            Finnish: 'fi',
+            French: 'fr',
+            German: 'de',
+            Hebrew: 'he',
+            Indonesian: 'id',
+            Italian: 'it',
+            Japanese: 'ja',
+            Kazakh: 'kk',
+            Korean: 'ko',
+            Norwegian: 'nb',
+            Polish: 'pl',
+            Portuguese: 'pt',
+            Romanian: 'ro',
+            Russian: 'ru',
+            Spanish: 'es',
+            Swedish: 'sv',
+            Turkish: 'tr',
+            Ukrainian: 'uk',
+            other: 'other'
+        },
+        languagesToHide: []
+    }
 };
 /* drkchange18 */
 function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use it as callback arg
@@ -1789,6 +1875,8 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
         jcontainer.html(title || '<div style="clear:both"/>');
         if (response.length) {
             var existingBroadcasts = [];
+            /* drkchange20 */var interestingToggle = false;
+            /* drkchange20 */var interestingState = [];
             for(var o in response){
                 existingBroadcasts.push(response[o].id);
             }
@@ -1799,8 +1887,11 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
             var ids = [];
             for (var j = broadcastsCache.idsQueue.length - 1; j >= 0; j--) {
                 var resp = broadcastsCache[broadcastsCache.idsQueue[j]];
+                var private = resp.is_locked;
+                var producer = (resp.broadcast_source === 'producer' || resp.broadcast_source === 'livecms');
                 /* drkchange00 */ var newHighlight = (broadcastsCache.oldBroadcastsList.indexOf(broadcastsCache.idsQueue[j]) < 0 && refreshFrom === 'following2' && broadcastsCache.oldBroadcastsList.length !== 0) ? ' newHighlight' : '';
-                var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + ((existingBroadcasts.indexOf(broadcastsCache.idsQueue[j]) < 0) ? ' deletedBroadcast' : '') + /* drkchange19 */'" nr="' + j + '"/>').append(getDescription(resp));
+                var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + ((existingBroadcasts.indexOf(broadcastsCache.idsQueue[j]) < 0) ? ' deletedBroadcast' : '') 
+                + (private ? ' private' : '') + (producer? ' producer' : '') +/* drkchange19 */'" nr="' + j + '"/>').append(getDescription(resp));
                 var link = $('<a>Get stream link</a>');
                 link.click(getM3U.bind(null, resp.id, stream));
                 /* drkchange22 */var getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
@@ -1813,6 +1904,9 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
                     /* drkchange20 */if(broadcastsCache.interestingList.length > 100)
                         broadcastsCache.interestingList.shift();
                 })) : '';
+                /* drkchange23 */(broadcastsCache.filters.hideEnded && !newHighlight && (resp.state != 'RUNNING')) ? stream.hide() : '';
+                /* drkchange23 */(broadcastsCache.filters.hideProducer && !newHighlight && producer) ? stream.hide() : '';
+                /* drkchange23 */(broadcastsCache.filters.languagesToHide.indexOf(resp.language) >= 0) ? stream.hide() : '';
                 jcontainer.prepend(stream.append(link).append(getTheLink)/* drkchange22 */);
                 ids.push(resp.id);
                 /* drkchange07 */ if (broadcastsWithLinks.hasOwnProperty(resp.id) ){
@@ -1829,7 +1923,7 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
                         stream.find('.responseLinks').append(
                             /* drkchange15 */(settings.showM3Ulinks && broadcastsWithLinks[resp.id].m3uLink) ? broadcastsWithLinks[resp.id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
                             (NODEJS ? broadcastsWithLinks[resp.id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''), clipboardLink,
-                            /* drkchange09 */ (!NODEJS && (/* drkchange16 */settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && resp.is_locked))) ? [' | ', clipboardDowLink] : '', '<br/>'
+                            /* drkchange09 */ (!NODEJS && (/* drkchange16 */settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private))) ? [' | ', clipboardDowLink] : '', '<br/>'
                         );
                     }
                     if(rep){
@@ -1843,8 +1937,8 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
                             (settings.showM3Ulinks && settings.showPRlinks && repM3U) ? ' | ' : '',
                             /* drkchange14 */(settings.showPRlinks && NODEJS ? [broadcastsWithLinks[resp.id].RdownloadLink.clone(true,true),
                             ' | '] : ''),/* drkchange14 */settings.showPRlinks ? RclipboardLink : '',
-                            /* drkchange14 */(!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && resp.is_locked)) && settings.showPRlinks) ?/* drkchange09 */  ' | ' : '',
-                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && resp.is_locked)) && settings.showPRlinks) ? RclipboardDowLink :'', '<br/>'
+                            /* drkchange14 */(!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks) ?/* drkchange09 */  ' | ' : '',
+                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks) ? RclipboardDowLink :'', '<br/>'
                         );
                     }
                 }
@@ -1873,16 +1967,29 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
             }));
             /* drkchange20 */jcontainer.prepend($('<a class="watching right icon">Show interesting only</a><br/>').click(function () {
                 var cards = jcontainer.find('.card');
-                var interestingList = broadcastsCache.interestingList;
                 $.each(cards, function(i){
-                    for(a in interestingList){
-                        if($(cards[i]).hasClass(interestingList[a])){
+                    for(a in broadcastsCache.interestingList){
+                        if($(cards[i]).hasClass(broadcastsCache.interestingList[a])){
                             $(cards[i]).addClass('interesting');
                         break;
                         }
                     }
                 })
-                cards.not(".interesting").toggle();
+                if(!interestingToggle){
+                    interestingToggle = true;
+                    cards.filter(":visible").each(function(index, card){
+                        interestingState.push(card.getAttribute('nr'))
+                    })
+                    cards.not(".interesting").hide();
+                    $(".interesting").show();
+                }else{
+                    interestingToggle = false;
+                    $(".interesting").hide();
+                    cards.filter(function(i, card){
+                        return (interestingState.indexOf(card.getAttribute('nr')) >= 0)
+                    }).show()
+                    interestingState = [];
+                }
                 $(window).trigger('scroll');    // for lazy load
             }));
             if (typeof response[0].n_watching == 'undefined')
@@ -2022,7 +2129,8 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
     var getURLCallback =function (r) {
         var date_created = new Date(r.broadcast.start);
         var date_created_str = date_created.getFullYear() + '-' + zeros(date_created.getMonth() + 1) + '-' + zeros(date_created.getDate()) + '_' + zeros(date_created.getHours()) + '.' + zeros(date_created.getMinutes());
-        var name = cleanFilename(date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
+        // var name = cleanFilename(date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
+        var name = cleanFilename(/* drkchange24 */(r.broadcast.is_locked ? 'PV_':'') + (partialReplay ? 'P':'') + (r.replay_url ? 'R_':'') + date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
         // For live
         var hls_url = r.hls_url || r.https_hls_url || r.lhls_url;
         if (hls_url) {
@@ -2067,14 +2175,13 @@ function download(name, url, cookies, user_id, user_name, /* drkchange06 */broad
         fs.mkdirSync(output_dir);
     } catch (e) {}
 
-    /* drkchange08 */ output_name_check(null,true);
-    function output_name_check(num,rep) {
-        (rep && (broadcast_info.state === 'ENDED') || (broadcast_info.state === 'TIMED_OUT')) ? (name = 'R_' + name) : '';
+    /* drkchange08 */ output_name_check(null);
+    function output_name_check(num) {
         var x = num || 0;
         fs.stat(output_dir + name + (num ? num : '') + '.ts', function (err, stats) {
             if (stats) {
                 x += 1;
-                output_name_check(x, false);
+                output_name_check(x);
             } else {
                 num ? name = name + num : '';
                 ///////////////////////////////////////////////////////////////* drkchange04 */ 
@@ -2164,6 +2271,7 @@ function saveAs(data, filename) {
 }
 function getFlag(country) {
     if (country === "en") country = "us";//no emoji flag for en :'(
+    if (country === "ar") country = "Arabic";//wrong emoji flag (argentina)
     var flagOffset = 127365;
     var both = String.fromCodePoint(country.codePointAt(0) + flagOffset) + String.fromCodePoint(country.codePointAt(1) + flagOffset);
     var output = emoji.replace_unified(both);

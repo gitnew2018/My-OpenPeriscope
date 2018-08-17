@@ -795,3 +795,20 @@ span.sProducer {
     background-color: rgb(20, 20, 20);
     -webkit-filter: grayscale(0.3);
 }
+
+#followingFilters label {
+    background-color: #222222;
+    margin: 4px;
+    padding: 2px 10px 2px 2px;
+    display: inline-block;
+}
+
+#followingFilters{
+    background-color: #1A1A1A;
+    Width:100%;
+    border: 1px solid #343434
+}
+
+fieldset.languageFilter {
+    border: 1px solid #343434;
+  }

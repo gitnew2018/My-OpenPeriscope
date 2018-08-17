@@ -31,6 +31,8 @@ Unofficial in-browser client for Periscope (userscript)
 * When "Enable automatic downloading of the following items" or "Enable notifications" is on, replay links are saved and displayed on their boradcast card(drkchange21)
 * In standalone version transitions in css caused heavy cpu usage. Now all are off.
 * Added checkbox to activate auto getting partial replay links(drkchange22)
+* Added filters. Hide replays, producer or by language (drkchange23)
+* Saved broadcasts now have prefixes:PV_ PR_ R_(private, partial replay, replay) (drkchange24)
 
 ### Using as standalone application
 
