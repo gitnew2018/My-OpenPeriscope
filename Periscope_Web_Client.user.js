@@ -236,10 +236,12 @@ var Notifications = {
                 this.interval = setInterval(Api.bind(null, 'followingBroadcastFeed', {}, function (new_list) {
                     /* drkchange21 */var getReplayUrl;
                     /* drkchange21 */var cardsContainer = $('#right > div:visible > div');
+                    var new_list_ids =[];
                     for (var i in new_list) {
                         var contains = false;
                         /* drkchange11 */var stateChanged = false;
                         /* drkchange22 */var repeatInteresting = broadcastsCache.autoGettinList.indexOf(new_list[i].id) >= 0;
+                        new_list_ids.push(new_list[i].id);
                         for (var j in Notifications.old_list)
                             if (Notifications.old_list[j].id == new_list[i].id) {
                                 contains = true;
@@ -336,6 +338,7 @@ var Notifications = {
                                         var refreshIndicator = $('<a> ◄</>')
                                         setTimeout(function(){refreshIndicator.hide(); }, 2000);
                                         var card = cardsContainer.find('.card.' + _broadcast_info.id);
+                                        !_partial_replay ? card.removeClass('RUNNING').addClass(_broadcast_info.state) : '';
                                         card.find('.responseLinks').empty();
                                         card.find('.responseLinksReplay').empty().append(
                                             (NODEJS ? [downloadLink,' | '] : ''),clipboardLink,
@@ -355,15 +358,16 @@ var Notifications = {
                             }
                         }
                     }
-                    /////////////////* drkchange18 */
-                    var existingBroadcasts = [];
-                    for(var o in new_list){
-                        existingBroadcasts.push(new_list[o].id);
+                    for (var m in broadcastsCache.idsQueue){//drkchange update state of deleted broadcasts
+                        if(new_list_ids.indexOf(broadcastsCache.idsQueue[m]) < 0){
+                            var card = cardsContainer.find( '.' + broadcastsCache.idsQueue[m]);
+                            card.removeClass('RUNNING').addClass('ENDED deletedBroadcast');
+                        }
                     }
+                    /////////////////* drkchange18 */
                     for (var l = new_list.length - 1; l >= 0  ; l--) {
                         broadcastsCache[new_list[l].id] = $.extend({}, new_list[l]);
-                        broadcastsCache[new_list[l].id].state = "ENDED"; //prevent some cached broadcasts from showing as running.
-                        limitAddIDs(broadcastsCache, new_list[l].id, 100, existingBroadcasts);
+                        limitAddIDs(broadcastsCache, new_list[l].id, 100, new_list_ids);
                     }
                     //////////////* drkchange18 */ end
                     Notifications.old_list = new_list;
@@ -1886,11 +1890,13 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
             }
             var ids = [];
             for (var j = broadcastsCache.idsQueue.length - 1; j >= 0; j--) {
+                var deleted = existingBroadcasts.indexOf(broadcastsCache.idsQueue[j]) < 0;
+                deleted ? (broadcastsCache[broadcastsCache.idsQueue[j]].state = 'ENDED') : ''; //prevent some cached broadcasts from showing as running.
                 var resp = broadcastsCache[broadcastsCache.idsQueue[j]];
                 var private = resp.is_locked;
                 var producer = (resp.broadcast_source === 'producer' || resp.broadcast_source === 'livecms');
                 /* drkchange00 */ var newHighlight = (broadcastsCache.oldBroadcastsList.indexOf(broadcastsCache.idsQueue[j]) < 0 && refreshFrom === 'following2' && broadcastsCache.oldBroadcastsList.length !== 0) ? ' newHighlight' : '';
-                var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + ((existingBroadcasts.indexOf(broadcastsCache.idsQueue[j]) < 0) ? ' deletedBroadcast' : '') 
+                var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + (deleted ? ' deletedBroadcast' : '') 
                 + (private ? ' private' : '') + (producer? ' producer' : '') +/* drkchange19 */'" nr="' + j + '"/>').append(getDescription(resp));
                 var link = $('<a>Get stream link</a>');
                 link.click(getM3U.bind(null, resp.id, stream));
@@ -2009,11 +2015,11 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
         }
     };
 }
-function limitAddIDs(toObject, whatID, howMany, inResponse, forward){
+function limitAddIDs(toObject, whatID, howMany, inResponse){
     if(toObject.idsQueue.indexOf(whatID) === -1)
             toObject.idsQueue.unshift(whatID);
     var len = toObject.idsQueue.length;
-    if(len > howMany){ //remove first id thats is not in response
+    if(len > howMany){ //to keep catched broadcasts under (howMany) remove first card from bottom that holds deleted broadcast
         for(var i = len - 1; i >= 0; i--){
             if(inResponse.indexOf(toObject.idsQueue[i]) < 0){
                 delete toObject[toObject.idsQueue[i]]
@@ -2129,7 +2135,6 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
     var getURLCallback =function (r) {
         var date_created = new Date(r.broadcast.start);
         var date_created_str = date_created.getFullYear() + '-' + zeros(date_created.getMonth() + 1) + '-' + zeros(date_created.getDate()) + '_' + zeros(date_created.getHours()) + '.' + zeros(date_created.getMinutes());
-        // var name = cleanFilename(date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
         var name = cleanFilename(/* drkchange24 */(r.broadcast.is_locked ? 'PV_':'') + (partialReplay ? 'P':'') + (r.replay_url ? 'R_':'') + date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
         // For live
         var hls_url = r.hls_url || r.https_hls_url || r.lhls_url;
