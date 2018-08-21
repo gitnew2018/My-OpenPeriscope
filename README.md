@@ -33,6 +33,10 @@ Unofficial in-browser client for Periscope (userscript)
 * Added checkbox to activate auto getting partial replay links(drkchange22)
 * Added filters. Hide replays, producer or by language (drkchange23)
 * Saved broadcasts now have prefixes:PV_ PR_ R_(private, partial replay, replay) (drkchange24)
+* Update state of broadcasts, updating thumbnails is optional (drkchange25)
+* Seach by @username not only by user id (drkchange26)
+* Screenlist now displayed differently by default (drkchange01)
+* Added input field to download manager to quickly download from web link (drkchange27)
 
 ### Using as standalone application
 

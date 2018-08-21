@@ -140,7 +140,7 @@ input[type="text"]:focus, textarea:focus {
     border-radius: 5px;
     line-height: 36px;
     outline: 0 none;
-    padding: 0 2rem;
+    padding: 0 1.4rem;
     text-transform: uppercase;
     color: #FFF;
     border: solid 2px #7F99EA;
@@ -209,11 +209,12 @@ input[type="text"]:focus, textarea:focus {
     border-radius: 100%;
     display: block;
     margin: 0 auto 5px auto;
+    min-height: 128px;
 }
 
 #left > a.button {
     border: solid 2px #D32D2D;
-    margin: 0 0 5px 20px;
+    margin: 0 0 5px 30px;
 }
 
 #left > a.button:hover {
@@ -414,7 +415,7 @@ pre {
     background-color: #222222;
     border-radius: 2px;
     min-width: 350px;
-    border-left: 5px solid;
+    border-left: 5px solid #222222;
     padding-left: 5px;
 }
 
@@ -794,6 +795,7 @@ span.sProducer {
 .card.deletedBroadcast {
     background-color: rgb(20, 20, 20);
     -webkit-filter: grayscale(0.3);
+    filter: grayscale(0.3);
 }
 
 #followingFilters label {
@@ -811,4 +813,12 @@ span.sProducer {
 
 fieldset.languageFilter {
     border: 1px solid #343434;
-  }
+}
+
+#downloadFrom{
+    display: flex;
+}
+
+#broadcastLink{
+    width: 100%;
+}

@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.3
+// @version     0.1.4
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -328,7 +328,7 @@ var Notifications = {
                                             getURL(a1, a2);
                                         }, 500, _broadcast_info.id, getReplayUrl);
                                     }else if(replay){
-                                        limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 100, [])
+                                        limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 100, []);
                                         var ffmpeg_cookies = [];
                                         /* drkchange09 */var downloader_cookies = '';
                                         /* drkchange09 */if (cookies && cookies.length) {
@@ -444,6 +444,8 @@ function switchSection(section, param, popstate) {
                 }
                 break;
         }
+    /* drkchange06 */if(section == 'Dmanager')
+    $('#' + section).remove(), Inits[section]();
     document.title = section + ' - ' + 'My-OpenPeriscope';
     /* drkchange05 */ if (ScrollPositions.hasOwnProperty(section)) {
         window.scrollTo(0, ScrollPositions[section]);
@@ -1429,7 +1431,8 @@ User: function () {
         /* drkchange26 */var param = {user_id : id};
         /* drkchange26 */name ? param = {username : name} : '' ;
         Api('user', param, function (response) {
-            /* drkchange26 */$('#user_id').val(response.user.id);
+            /* drkchange26 */id = response.user.id;
+            /* drkchange26 */$('#user_id').val(id);
             resultUser.prepend(getUserDescription(response.user));
             FollowersSpoiler.append(' (' + response.user.n_followers + ')');
             FollowingSpoiler.append(' (' + response.user.n_following + ')');
@@ -1448,9 +1451,11 @@ User: function () {
                 Api('followers', {
                     user_id: id
                 }, function (followers) {
-                    if (followers.length)
+                    if (followers.length){
+                        /* drkchange26 */FollowersSpoiler.append(' (' + followers.length + ')');
                         for (var i in followers)
                             followersDiv.append($('<div class="card"/>').append(getUserDescription(followers[i])));
+                        }
                     else
                         followersDiv.html('No results');
                 });
@@ -1461,9 +1466,11 @@ User: function () {
                 Api('following', {
                     user_id: id
                 }, function (following) {
-                    if (following.length)
+                    if (following.length){
+                       /* drkchange26 */ FollowingSpoiler.append(' (' + following.length + ')');
                         for (var i in following)
                             followingDiv.append($('<div class="card"/>').append(getUserDescription(following[i])));
+                        }
                     else
                         followingDiv.html('No results');
                 });
@@ -1623,7 +1630,7 @@ Edit: function () {
     });
 
     if (NODEJS) {
-        var autoDownload = $('<label><input type="checkbox" ' + (settings.automaticDownload ? 'checked' : '') + '/> Enable automatic downloading of the following items</label>').click(function (e) {
+        var autoDownload = $('<label><input type="checkbox" ' + (settings.automaticDownload === false ? '' : 'checked') + '/> Enable automatic downloading of the following items</label>').click(function (e) {
             setSet('automaticDownload', e.target.checked);
             if (e.target.checked)
                 Notifications.start();
@@ -1670,7 +1677,7 @@ Edit: function () {
     /* drkchange15 */var show_m3u_links = $('<label><input type="checkbox" ' + (settings.showM3Ulinks ? 'checked' : '') + '/> Show M3U links</label>').click(function (e) {
         setSet('showM3Ulinks', e.target.checked);
     });
-    /* drkchange14 */var show_partial_links = $('<label><input type="checkbox" ' + (settings.showPRlinks ? 'checked' : '') + '/> Show partial replay(PR) links</label>').click(function (e) {
+    /* drkchange14 */var show_partial_links = $('<label><input type="checkbox" ' + (settings.showPRlinks === false ? '' : 'checked') + '/> Show partial replay(PR) links</label>').click(function (e) {
         setSet('showPRlinks', e.target.checked);
     });
     /* drkchange25 */var update_thumbnails = $('<label><input type="checkbox" ' + (settings.updateThumbnails ? 'checked' : '') + '/> Auto update thumbnails</label>').click(function (e) {
@@ -1715,7 +1722,23 @@ Edit: function () {
             refreshButton.click();
         }
     });
-    $('#right').append($('<div id="Dmanager"/>').append(refreshButton, removefinished, result));
+    /* drkchange27 */var goButton = $('<a class="button" id="downloadThis">Go</a>').click(function () {
+        var dowLink = $('#broadcastLink').val().trim();
+        var validLink = (dowLink.startsWith('https://www.periscope.tv/') || dowLink.startsWith('https://www.pscp.tv/'));
+        if(validLink){
+            var broadcast_id = dowLink.split('/')[4];
+            getURL(broadcast_id, function (live, replay, cookies, _name, _user_id, _user_name, _broadcast_info) {
+                var ffmpeg_cookies = [];
+                if (live)
+                    download(_name, live, ffmpeg_cookies, _user_id, _user_name, _broadcast_info);
+                else if (replay)
+                    download(_name, replay, ffmpeg_cookies, _user_id, _user_name, _broadcast_info);
+            });
+            setTimeout(function(){refreshButton.click()},5000);
+        }
+    });
+    /* drkchange27 */var linkInput = $('<div id="downloadFrom" title="Download from link"><input id="broadcastLink" type="text" size="15" placeholder="https://www.pscp.tv/w/..."></div>').append(goButton);
+    $('#right').append($('<div id="Dmanager"/>').append(refreshButton, removefinished,'</br>', /* drkchange27 */linkInput, result));
     refreshButton.click();
 },
 Console: function () {
@@ -1899,7 +1922,7 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
             }
             for (var i = response.length - 1; i >= 0; i--) {
                 broadcastsCache[response[i].id] = $.extend({}, response[i]);
-                limitAddIDs(broadcastsCache, response[i].id, 100, existingBroadcasts)
+                limitAddIDs(broadcastsCache, response[i].id, 100, existingBroadcasts);
             }
             var ids = [];
             for (var j = broadcastsCache.idsQueue.length - 1; j >= 0; j--) {
@@ -2069,7 +2092,7 @@ function getM3U(id, jcontainer) {
                 downloader_cookies += cookies[i].Name + '=' + cookies[i].Value + '; ';
             }
         }
-        limitAddIDs(broadcastsWithLinks, id, 100, [])
+        limitAddIDs(broadcastsWithLinks, id, 100, []);
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '" class="linkLive button2" title="Copy live broadcast URL">Copy URL</a>');
             /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="button2">NodeDown</a>');
@@ -2322,14 +2345,45 @@ function getDescription(stream) {
             broadcast_id: stream.id
         }, function (thumbs) {
             /* drkchange01 */
-            var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=750,height=600,top=100,left="+(screen.width/2));
+            var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=750,height=620,top=100,left="+(screen.width/2));
             var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
-            var html = '';
+            var html = '<style type="text/css">.screenPreviewer{position: absolute;} .container{border: 1px solid gray;height: 90%; position: absolute;} body{background: #2A2A2A} a{color:white} </style>'+'<a href="#" id="button">Switch</a><div id="container">';
             for (var i in thumbs.chunks) {
                 html+='<img src="' + thumbs.chunks[i].tn + '"/>';
             }
-            win.document.head.innerHTML = title;
-            win.document.body.innerHTML = html;
+            html+='</div><script>\
+            setTimeout(function () {\
+                var images = document.querySelectorAll("img");\
+                var len = images.length;\
+                var container = document.getElementById("container");\
+                var containerBase = container.clientWidth;\
+                var lastI = 0;\
+                images[0].style.zIndex = 1;\
+                var button = document.getElementById("button");\
+                button.onclick = function () {\
+                    container.style.width = containerBase;\
+                    container.className == "container" ? (container.className = "") : (container.className = "container");\
+                    for (var j = 0; j < len; j++) {\
+                        images[j].className == "screenPreviewer" ? (images[j].className = "", images[j].style.webkitUserDrag = "") : (images[j].className = "screenPreviewer", images[j].style.webkitUserDrag = "none");\
+                    }\
+                    var i = 0,speed=0;\
+                    container.onmousemove = function (event) {\
+                        i = Math.floor(event.offsetX / (containerBase / len));\
+                        if(i >= len) i = len - 1;\
+                        if (i != lastI) {\
+                            images[lastI].style.zIndex = 0;\
+                            images[i].style.zIndex = 1;\
+                            lastI = i;\
+                        }\
+                    }\
+                }\
+            }, 100);\
+            setTimeout(function () {\
+                button.click();\
+            }, 200);\
+            </script>';
+            win.document.body.innerHTML = '';
+            win.document.write(title,html);
         });
     });
     /* drkchange01 */var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
