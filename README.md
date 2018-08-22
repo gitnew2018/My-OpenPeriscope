@@ -5,7 +5,7 @@ Unofficial in-browser client for Periscope (userscript)
 ### Features added in my version
 
 * New broadcasts after refresh are highlited (marked in code as /* drkchange00 */)
-* Now thumbnail previews of replays open in new window(drkchange01)
+* Now thumbnail previews of replays open in new window even in suerscript(drkchange01)
 * Download button changes(drkchange02)
 * You can select users who's braodcasts will be recorded(drkchange03)
 * New video downloader based on Node.js. It's more reliable imho(drkchange04 and whole downloaderNode.js file)
@@ -35,7 +35,7 @@ Unofficial in-browser client for Periscope (userscript)
 * Saved broadcasts now have prefixes:PV_ PR_ R_(private, partial replay, replay) (drkchange24)
 * Update state of broadcasts, updating thumbnails is optional (drkchange25)
 * Seach by @username not only by user id (drkchange26)
-* Screenlist now displayed differently by default (drkchange01)
+* Screenlist now changed to screenPreviewer (drkchange01)
 * Added input field to download manager to quickly download from web link (drkchange27)
 
 ### Using as standalone application
