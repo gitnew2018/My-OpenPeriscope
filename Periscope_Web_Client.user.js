@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.4
+// @version     0.1.5
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -1496,7 +1496,7 @@ User: function () {
         }
         $(".spoiler").spoiler({ triggerEvents: true });
     });
-     /* drkchange26 */var idInput = $('<div id="User">id: <input id="user_id" type="text" size="15"><span id="UserName">name: </span><input id="user_name" type="text" size="15"></div>');
+     /* drkchange26 */var idInput = $('<div id="User">id: <input id="user_id" type="text" size="15" placeholder="user_id"><input id="user_name" type="text" size="15" placeholder="@username"></div>');
     $('#right').append(/* drkchange26 */idInput.append(showButton, '<br/><br/>', resultUser));
 },
 People: function () {
@@ -2345,34 +2345,33 @@ function getDescription(stream) {
             broadcast_id: stream.id
         }, function (thumbs) {
             /* drkchange01 */
-            var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=750,height=620,top=100,left="+(screen.width/2));
+            var win = window.open("", "screenlist", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
             var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
-            var html = '<style type="text/css">.screenPreviewer{position: absolute;} .container{border: 1px solid gray;height: 90%; position: absolute;} body{background: #2A2A2A} a{color:white} </style>'+'<a href="#" id="button">Switch</a><div id="container">';
+            var html = '<style type="text/css">.hideImages{display: none;}#screenPreviewer{height: 90%; position: absolute;left: 50% ;transform: translateX(-50%); -webkit-transform: translateX(-50%); border: 1px solid gray} body{background: #2A2A2A} a{color: white; display: block}</style>'
+             +'<a href="#" id="button">Switch</a><div id="screenPreviewer"></div>';
             for (var i in thumbs.chunks) {
                 html+='<img src="' + thumbs.chunks[i].tn + '"/>';
             }
-            html+='</div><script>\
+            html+='<script>\
             setTimeout(function () {\
                 var images = document.querySelectorAll("img");\
-                var len = images.length;\
-                var container = document.getElementById("container");\
-                var containerBase = container.clientWidth;\
+                var widowWidth = 0.9 * window.innerWidth;\
+                var bg = document.getElementById("screenPreviewer");\
                 var lastI = 0;\
-                images[0].style.zIndex = 1;\
                 var button = document.getElementById("button");\
                 button.onclick = function () {\
-                    container.style.width = containerBase;\
-                    container.className == "container" ? (container.className = "") : (container.className = "container");\
-                    for (var j = 0; j < len; j++) {\
-                        images[j].className == "screenPreviewer" ? (images[j].className = "", images[j].style.webkitUserDrag = "") : (images[j].className = "screenPreviewer", images[j].style.webkitUserDrag = "none");\
-                    }\
-                    var i = 0,speed=0;\
-                    container.onmousemove = function (event) {\
-                        i = Math.floor(event.offsetX / (containerBase / len));\
-                        if(i >= len) i = len - 1;\
+                    bg.style.width = widowWidth;\
+                    bg.style.display == "block" ? bg.style.display = "none" : bg.style.display = "block";\
+                    for (var j = 0, len = images.length; j < len; j++)\
+                    images[j].className == "hideImages" ? (images[j].className = "") : (images[j].className = "hideImages");\
+                    var i = 0;\
+                    bg.onmousemove = function (event) {\
+                        i = Math.floor(event.offsetX / (widowWidth / len));\
+                        if (i >= len) i = len - 1;\
+                        if (i < 1) i = 0;\
                         if (i != lastI) {\
-                            images[lastI].style.zIndex = 0;\
-                            images[i].style.zIndex = 1;\
+                            if (images[i].complete)\
+                            bg.style.background = "url(" + images[i].src + ") no-repeat center /contain";\
                             lastI = i;\
                         }\
                     }\
