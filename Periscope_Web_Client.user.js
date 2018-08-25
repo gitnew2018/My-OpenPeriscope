@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.5
+// @version     0.1.6
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -303,7 +303,7 @@ var Notifications = {
                         }
                         ///////////////////* drkchange11 */
                         if (!contains || stateChanged || /* drkchange22 */repeatInteresting) { // NEW BRDCST! or changed state from live to replay
-                            if(NODEJS && settings.logToFile && !(new_list[i].state === 'ENDED' || new_list[i].state === 'TIMED_OUT' )/* drkchange22 */&& !repeatInteresting){
+                            if((NODEJS && settings.logToFile && !(new_list[i].state === 'ENDED' || new_list[i].state === 'TIMED_OUT' ))/* drkchange22 */&& !repeatInteresting){
                                 const fs = require('fs');
                                 var date_start = new Date(new_list[i].start);
                                 fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' + '-LIVE- ' + (new_list[i].is_locked ? 'PRIVATE ' : '') + 'start@'
@@ -313,7 +313,7 @@ var Notifications = {
                             }
                             if(new_list[i].state === 'ENDED' || new_list[i].state === 'TIMED_OUT' /* drkchange22 */|| repeatInteresting){
                                 getReplayUrl = function (live, replay, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
-                                    if(NODEJS && settings.logToFile && !_partial_replay){
+                                    if(NODEJS && settings.logToFile && !_partial_replay && /* drkchange22 */!repeatInteresting){
                                         const fs = require('fs');
                                         var date_start = new Date(_broadcast_info.start);
                                         fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' +  'REPLAY ' + (_broadcast_info.is_locked ? 'PRIVATE ' : '') + 'start@'
@@ -326,7 +326,7 @@ var Notifications = {
                                     if(live){
                                         setTimeout(function (a1,a2) {//some are ended in following feed and running when you try to get replay url
                                             getURL(a1, a2);
-                                        }, 500, _broadcast_info.id, getReplayUrl);
+                                        }, 1000, _broadcast_info.id, getReplayUrl);
                                     }else if(replay){
                                         limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 100, []);
                                         var ffmpeg_cookies = [];
@@ -337,18 +337,17 @@ var Notifications = {
                                             }
                                         }
                                         var clipboardLink = $('<a data-clipboard-text="' + replay + '" class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Copy ' + (_partial_replay ? 'partial ' : '') + 'replay URL">'+ (_partial_replay ? 'Copy PR_URL':'Copy R_URL') +'</a>');
-                                        /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '">R_NodeDown</a>');
-                                        var downloadLink =/*drkchange02*/$('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: replay, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                                         new ClipboardJS(clipboardLink.get(0));
+                                        /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2">' + (_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
+                                        new ClipboardJS(clipboardDowLink.get(0));
+                                        var downloadLink =/*drkchange02*/$('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: replay, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                                         var refreshIndicator = $('<a> ◄</>')
                                         setTimeout(function(){refreshIndicator.hide()}, 2000);
+                                        var showDowLink = !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked));
                                         var card = cardsContainer.find('.card.' + _broadcast_info.id);
                                         card.find('.responseLinks').empty();
                                         card.find('.responseLinksReplay').empty().append(
-                                            (NODEJS ? [downloadLink,' | '] : ''),clipboardLink,
-                                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && new_list[i].is_locked))) ?/* drkchange09 */  ' | ' : '',
-                                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && new_list[i].is_locked))) ? RclipboardDowLink : '', 
-                                            refreshIndicator
+                                            (NODEJS ? [downloadLink,' | '] : ''),clipboardLink, showDowLink ?/* drkchange09 */  [' | ', clipboardDowLink] : '', refreshIndicator
                                         );
                                         /* drkchange07 */broadcastsWithLinks[_broadcast_info.id] = {
                                             RdownloadLink : downloadLink.clone(true,true),
@@ -364,8 +363,18 @@ var Notifications = {
                     }
                     /* drkchange25 */for (var m in broadcastsCache.idsQueue){//update state of deleted broadcasts
                         if(new_list_ids.indexOf(broadcastsCache.idsQueue[m]) < 0){
-                            var card = cardsContainer.find( '.card.' + broadcastsCache.idsQueue[m]);
-                            card.removeClass('RUNNING').addClass('ENDED deletedBroadcast');
+                            var bid = broadcastsCache.idsQueue[m];
+                            var card = cardsContainer.find( '.card.' + bid);
+                            if(!card.hasClass('deletedBroadcast')){
+                                card.removeClass('RUNNING').addClass('ENDED deletedBroadcast');
+                                if(broadcastsCache[bid].is_locked == true){ // remove links from deleted private broadcasts, you can't download anyway
+                                    card.find('.links').empty();
+                                    if(broadcastsWithLinks.idsQueue.indexOf(bid) >= 0){
+                                        broadcastsWithLinks.idsQueue.splice((broadcastsWithLinks.idsQueue.indexOf(bid)),1);
+                                        delete broadcastsWithLinks[bid];
+                                    }
+                                }
+                            }
                         }
                     }
                     /////////////////* drkchange18 */
@@ -1885,7 +1894,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
             Armenian: 'hy',
             Chinese: 'zh',
             Danish: 'da',
-            English: ['en','us','uk'],
+            English: ['en','us'],
             Finnish: 'fi',
             French: 'fr',
             German: 'de',
@@ -1952,35 +1961,36 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
                 jcontainer.prepend(stream.append(link).append(getTheLink)/* drkchange22 */);
                 ids.push(resp.id);
                 /* drkchange07 */ if (broadcastsWithLinks.hasOwnProperty(resp.id) ){
-                    var rep = broadcastsWithLinks[resp.id].RclipboardLink;
-                    var repM3U = broadcastsWithLinks[resp.id].Rm3uLink;
-                    var liv = broadcastsWithLinks[resp.id].clipboardLink;
+                    var brwlID = broadcastsWithLinks[resp.id];
+                    var rep = brwlID.RclipboardLink;
+                    var repM3U = brwlID.Rm3uLink;
+                    var liv = brwlID.clipboardLink;
+                    var showDowLink = !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks;
 
                     if(liv){
-                        var clipboardLink = broadcastsWithLinks[resp.id].clipboardLink.clone(); //clones prevent links from disappearing.
+                        var clipboardLink = brwlID.clipboardLink.clone(); //clones prevent links from disappearing.
                         new ClipboardJS(clipboardLink.get(0));
-                        var clipboardDowLink = broadcastsWithLinks[resp.id].clipboardDowLink.clone();
+                        var clipboardDowLink = brwlID.clipboardDowLink.clone();
                         new ClipboardJS(clipboardDowLink.get(0));
 
                         stream.find('.responseLinks').append(
-                            /* drkchange15 */(settings.showM3Ulinks && broadcastsWithLinks[resp.id].m3uLink) ? broadcastsWithLinks[resp.id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
-                            (NODEJS ? broadcastsWithLinks[resp.id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''), clipboardLink,
-                            /* drkchange09 */ (!NODEJS && (/* drkchange16 */settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private))) ? [' | ', clipboardDowLink] : '', '<br/>'
+                            /* drkchange15 */(settings.showM3Ulinks && brwlID.m3uLink) ? brwlID.m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
+                            (NODEJS ? brwlID.downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''), clipboardLink,
+                            /* drkchange09 */ showDowLink ? [' | ', clipboardDowLink] : '', '<br/>'
                         );
                     }
                     if(rep){
-                        var RclipboardLink = broadcastsWithLinks[resp.id].RclipboardLink.clone();
+                        var RclipboardLink = brwlID.RclipboardLink.clone();
                         new ClipboardJS(RclipboardLink.get(0));
-                        var RclipboardDowLink = broadcastsWithLinks[resp.id].RclipboardDowLink.clone();
+                        var RclipboardDowLink = brwlID.RclipboardDowLink.clone();
                         new ClipboardJS(RclipboardDowLink.get(0));
 
                         stream.find('.responseLinksReplay').append(
-                            /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? broadcastsWithLinks[resp.id].Rm3uLink.clone(true,true) : '',
+                            /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? brwlID.Rm3uLink.clone(true,true) : '',
                             (settings.showM3Ulinks && settings.showPRlinks && repM3U) ? ' | ' : '',
-                            /* drkchange14 */(settings.showPRlinks && NODEJS ? [broadcastsWithLinks[resp.id].RdownloadLink.clone(true,true),
+                            /* drkchange14 */(settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink.clone(true,true),
                             ' | '] : ''),/* drkchange14 */settings.showPRlinks ? RclipboardLink : '',
-                            /* drkchange14 */(!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks) ?/* drkchange09 */  ' | ' : '',
-                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks) ? RclipboardDowLink :'', '<br/>'
+                            /* drkchange09 */ showDowLink ? [' | ', RclipboardDowLink] :'', '<br/>'
                         );
                     }
                 }
@@ -2095,7 +2105,7 @@ function getM3U(id, jcontainer) {
         limitAddIDs(broadcastsWithLinks, id, 100, []);
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '" class="linkLive button2" title="Copy live broadcast URL">Copy URL</a>');
-            /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="button2">NodeDown</a>');
+            /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="linkLive button2">NodeDown</a>');
             var downloadLink =/*drkchange02*/$('<a class="linkLive button2" title="Download live broadcast">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange06 */broadcast_info: _broadcast_info}));
             liveLContainer.append(
                 /* drkchange15 */settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', /* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
@@ -2127,7 +2137,7 @@ function getM3U(id, jcontainer) {
                     var filename = 'playlist.m3u8';
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download' + /* drkchange14 */(_partial_replay ? ' PR ' : ' replay ' ) + 'M3U</a>').click(saveAs.bind(null, m3u_text, filename));
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + /* drkchange14 */(_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
-                    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + /* drkchange14 */(_partial_replay ? '">PR_NodeDown</a>' : '">R_NodeDown</a>' ));
+                    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
                     var downloadLink = /*drkchange02*/$('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
                     .click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                     replayLContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
@@ -2355,7 +2365,7 @@ function getDescription(stream) {
             html+='<script>\
             setTimeout(function () {\
                 var images = document.querySelectorAll("img");\
-                var widowWidth = 0.9 * window.innerWidth;\
+                var widowWidth = (0.9 * window.innerWidth) || 720;\
                 var bg = document.getElementById("screenPreviewer");\
                 var lastI = 0;\
                 var button = document.getElementById("button");\
@@ -2598,6 +2608,7 @@ function Api(method, params, callback, callback_fail) {
         headers: {
             'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
         },
+        timeout: 10000,
         data: JSON.stringify(params),
         onload: function (r) {
             Progress.stop();
