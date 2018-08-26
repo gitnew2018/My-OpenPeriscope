@@ -150,7 +150,7 @@ function process_playlist(vid_chunks) {
 
 function timeout_check(time) {
     if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_broadcastEnd) || (g_live_stream === null && !g_beginnig)) {
-        var counter = 3;
+        var counter = 4;
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
             process.send('Time out');
@@ -233,8 +233,8 @@ function download_live() {
                     process.send(e);
                     throw e;
                 }
-            }).setTimeout(30000, function() {
-                console.log("request timeout");
+            }).setTimeout(20000, function() {
+                console.log("request timeout3");
                     this.abort();
             });
         }
@@ -259,8 +259,8 @@ function download_vod(file_url, chunk_name, chunksToDownload) {
         if ((res.statusCode !== 200) && (g_retries > 0)) { //video chunk might be incomplete/empty. retry.
             g_retries -= 1;
             setTimeout(function (file_url, chunk_name, chunksToDownload) {
-                download_vod.bind(null, file_url, chunk_name, chunksToDownload);
-            }, 2000);
+                download_vod(file_url, chunk_name, chunksToDownload);
+            }, 2000, file_url, chunk_name, chunksToDownload);
         } else {
             res.on('data', function (data) {
                 dataParts.push(data);
@@ -293,15 +293,15 @@ function download_vod(file_url, chunk_name, chunksToDownload) {
             if (!g_retrying) { //when multiple get requests fail, retry once
                 g_retries -= 1;
                 g_retrying = true;
-                setTimeout(process_playlist.bind(null, g_allChunksToDownload), g_timeToRetry * 1000);
+                setTimeout(function(g_allChunksToDownload){process_playlist(g_allChunksToDownload)}, g_timeToRetry * 1000, g_allChunksToDownload);
             }
         } else {
             process.send('Error Downloading file |  Exiting: ' + e.code);
             process.send(e);
             throw e;
         }
-    }).setTimeout(30000, function() {
-        console.log("request timeout");
+    }).setTimeout(20000, function() {
+        console.log("request timeout2");
             this.abort();
     });
 }
@@ -315,7 +315,7 @@ function existing_chunks_checker() {
     var allRequestsChecked = 0;
     var requestsCounter = 0;
     var numfilesToVerify = 0;
-    var simultaneous_check = g_simultaneous_down * 2;
+    var simultaneous_check = g_simultaneous_down * 4;
     g_allChunks.forEach(function (videoChunk) { //checking existance and size of dowloaded video chunks.
         fs.stat(g_DOWNLOAD_DIR + g_TEMP + videoChunk, function (err, stats) {
             if (stats) { // chunk downloaded already
@@ -350,28 +350,30 @@ function existing_chunks_checker() {
         var chunkUrl = url.resolve(g_m3u_url, videoChunk);
         var options = request_options(chunkUrl, 'HEAD'); // get headers only
         var req = https.request(options, function (res) {
-            allRequestsChecked += 1;
-            requestsCounter += 1;
-            filesToVerify.shift();
-            fileSizes.shift();
-            if (res.headers['content-length'] == fileSize) { // correct filesize, no need to redownload.
-                g_readyToAppend.push(videoChunk);
-            } else { //                                      // incomplete file, redownload
-                g_allChunksToDownload.push(videoChunk);
-            }
-            if ((filesChecked === g_allChunks.length) && (allRequestsChecked === numfilesToVerify)) {
-                process.send('verified size of ' + allRequestsChecked + ' files/' + g_allChunks.length + ', ' + g_readyToAppend.length + ' are OK.');
-                if (g_allChunksToDownload.length) {
-                    process_playlist(g_allChunksToDownload);
-                } else {
-                    concat_all();
+            res.on('data', function () {});
+            res.on('end', function () {
+                allRequestsChecked += 1;
+                requestsCounter += 1;
+                filesToVerify.shift();
+                fileSizes.shift();
+                if (res.headers['content-length'] == fileSize) { // correct filesize, no need to redownload.
+                    g_readyToAppend.push(videoChunk);
+                } else { //                                      // incomplete file, redownload
+                    g_allChunksToDownload.push(videoChunk);
                 }
-            } else if (requestsCounter === numAtOnce) {
-                requestsCounter = 0;
-                divide_requests();
-            }
+                if ((filesChecked === g_allChunks.length) && (allRequestsChecked === numfilesToVerify)) {
+                    process.send('verified size of ' + allRequestsChecked + ' files/' + g_allChunks.length + ', ' + g_readyToAppend.length + ' are OK.');
+                    if (g_allChunksToDownload.length) {
+                        process_playlist(g_allChunksToDownload);
+                    } else {
+                        concat_all();
+                    }
+                } else if (requestsCounter === numAtOnce) {
+                    requestsCounter = 0;
+                    divide_requests();
+                }
+            });
         });
-        req.end();
         req.on('error', function (e) {
             process.send('Warning problem with size checking request: ' + e.code);
             process.send(e);
@@ -388,10 +390,11 @@ function existing_chunks_checker() {
             } else if (requestsCounter === numAtOnce) {
                 divide_requests();
             }
-        }).setTimeout(10000, function() {
+        }).setTimeout(5000, function() {
             console.log("request headers timeout");
                 this.abort();
         });
+        req.end();
     }
 
 }
