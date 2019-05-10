@@ -130,8 +130,9 @@ if (location.href == 'https://api.twitter.com/oauth/authorize') {
         } else {
             var signInButton = $('<a class="button">Sign in with twitter</a>').click(SignIn1);
             var signInSMSButton = $('<a class="button">Sign in with SMS</a>').click(SignInSMS);
-            $(document.body).html('<input type="text" id="secret" size="60" placeholder="Enter periscope consumer secret here..." value="' +
-                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, signInSMSButton);
+            var signInSidButton = $('<a class="button">Sign in with SID</a>').click(SignInSessionID);
+            $(document.body).html('<input type="text" id="secret" size="60" placeholder="Enter periscope consumer secret here... or SID" value="' +
+                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, signInSMSButton, signInSidButton);
         }
         $(document.body).append(Progress.elem);
     });
@@ -2824,4 +2825,34 @@ function OAuthDigits(endpoint, options, callback) {
         args.data = args.data.substr(0, args.data.length - 1);
     }
     GM_xmlhttpRequest(args);
+}
+
+function SignInSessionID()
+{
+    setSet('session_cookie', $('#secret').val());
+    if (settings.session_cookie)
+    {
+        Api('user', { cookie: settings.session_cookie }, 
+            function (userResponse) 
+            {
+                loginTwitter = localStorage.getItem('loginTwitter');
+                if (!loginTwitter)
+                    loginTwitter = {cookie: settings.session_cookie, user: userResponse.user, suggested_username: '', settings: {} };
+                loginTwitter.user = userResponse.user;
+                loginTwitter.cookie = settings.session_cookie;
+                localStorage.setItem('loginTwitter', JSON.stringify(loginTwitter));
+                loginTwitter.user.profile_image_urls.sort(function (a, b) {
+                    return a.width * a.height - b.width * b.height;
+                });
+                Api('getSettings', {}, 
+                    function (settingsResponse) 
+                    {
+                        loginTwitter.settings = settingsResponse;
+                        localStorage.setItem('loginTwitter', JSON.stringify(loginTwitter));
+                        Ready(loginTwitter);
+                    }
+                )
+            }
+        )
+    }
 }
