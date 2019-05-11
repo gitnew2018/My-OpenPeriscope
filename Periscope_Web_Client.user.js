@@ -341,6 +341,10 @@ var Notifications = {
                                         new ClipboardJS(clipboardLink.get(0));
                                         /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2">' + (_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
                                         new ClipboardJS(clipboardDowLink.get(0));
+                                        // ==> [kewalsk] ffmpeg links
+                                        var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+replay_url+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR Copy FFMPEG' : 'R Copy FFMPEG') + '</a>');
+                                        new ClipboardJS(clipboardFFmpegLink.get(0));
+                                        // [kewalsk] <==
                                         var downloadLink =/*drkchange02*/$('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: replay, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                                         var refreshIndicator = $('<a> ◄</>')
                                         setTimeout(function(){refreshIndicator.hide()}, 2000);
@@ -353,6 +357,7 @@ var Notifications = {
                                         /* drkchange07 */broadcastsWithLinks[_broadcast_info.id] = {
                                             RdownloadLink : downloadLink.clone(true,true),
                                             RclipboardLink : clipboardLink.clone(),
+                                            RclipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
                                             /* drkchange09 */RclipboardDowLink : clipboardDowLink.clone()
                                         };
                                     }
