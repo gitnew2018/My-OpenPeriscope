@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.6
+// @version     0.1.7
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -20,8 +20,8 @@
 // @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/nathancahill/Split.js/raw/master/split.min.js
-// @downloadURL https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Periscope_Web_Client.user.js
-// @updateURL   https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Periscope_Web_Client.meta.js
+// @downloadURL https://github.com/kewalsk/My-OpenPeriscope/raw/master/Periscope_Web_Client.user.js
+// @updateURL   https://github.com/kewalsk/My-OpenPeriscope/raw/master/Periscope_Web_Client.meta.js
 // @icon        https://github.com/gitnew2018/My-OpenPeriscope/raw/master/images/openperiscope.png
 // @noframes
 // @grant       GM_addStyle
@@ -85,12 +85,6 @@ if (NODEJS) {  // for NW.js
         setSet('downloadPath', process.execPath.substring(0, process.execPath.lastIndexOf(process.platform === 'win32' ? '\\' : '/')));
     if (settings.windowSize)
         window.resizeTo(settings.windowSize.width, settings.windowSize.height);
-    // ==> [kewalsk] ffmpeg links
-    if (!settings.FFmpegCommand)
-        setSet('FFmpegCommand', 'ffmpeg -y'); // name of executable to start, default is to start ffmpeg from path and override output file if exist
-    if (!settings.FFmpegCommandArgs)
-        setSet('FFmpegCommandArgs', '-movflags faststart'); // just example, these arguments will be put at the end of command line
-    // [kewalsk] <==
     setTimeout(function(){
         $(window).resize(function (e) {
             setSet('windowSize', {
@@ -1700,9 +1694,13 @@ Edit: function () {
         setSet('updateThumbnails', e.target.checked);
     });
     // ==> [kewalsk] ffmpeg links
-    var show_ffmpeg_links = $('<label><input type="checkbox" ' + (settings.showFFmpegLinks ? 'checked' : '') + '/>Show FFMPEG links</label>').click(function (e) {
+    var show_ffmpeg_links = $('<label><input type="checkbox" ' + (settings.showFFmpegLinks ? 'checked' : '') + '/> Show FFMPEG links</label>').click(function (e) {
         setSet('showFFmpegLinks', e.target.checked);
     });
+    if (!settings.FFmpegCommand)
+        setSet('FFmpegCommand', 'ffmpeg -y'); // name of executable to start, default is to start ffmpeg from path and override output file if exist
+    if (!settings.FFmpegCommandArgs)
+        setSet('FFmpegCommandArgs', '-movflags faststart'); // just example, these arguments will be put at the end of command line
     var ffmpeg_command = $('<input type="text" value="'+settings.FFmpegCommand +'"/>').change(function () {
         setSet('FFmpegCommand', this.value);
     });
@@ -1735,7 +1733,7 @@ Edit: function () {
         /* drkchange16 */'<br>', show_nodeDown_links,
         /* drkchange16 */'<br>', show_nodeDown_linksPrv,
         // ==> [kewalsk] ffmpeg links
-        'FFmpeg command: ', ffmpeg_command,
+        '<br>FFmpeg command: ', ffmpeg_command,
         ' arguments: ', ffmpeg_command_args,
         // [kewalsk] ffmpeg links <==
         /* drkchange change order*/'<br/><hr color="#E0E0E0" size="1">' +
