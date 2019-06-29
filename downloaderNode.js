@@ -4,7 +4,9 @@ const fs = require('fs'),
     https = require('https'),
     keepAliveAgent = new https.Agent({
         keepAlive: true
-    });
+    }),
+    crypto = require('crypto');
+process.name = "hehe test";
 process.stdin.on('data', function (msg) {
     if (msg.toString() === 'q') {
         process.send('Stopped by User');
@@ -33,7 +35,10 @@ var g_m3u_url = process.argv[2],
     g_retrying = false,
     g_beginnig = true, //skip first timeout
     g_timeoutInterval,
-    vod = false;
+    vod = false,
+    g_decryptionKey = null,
+    g_chunkIvList = {},//  videochunk name + Initialization vector pairs
+    g_encrypted = false;
 
 get_playlist(g_m3u_url);
 
@@ -59,13 +64,29 @@ function get_playlist(urlLink) {
             responseParts.push(dataChunk);
         });
         res.on('end', function () {
-            var m3u_response = responseParts.join('');
+            var m3u_response = responseParts.join('').trim();
             g_broadcastEnd = m3u_response.lastIndexOf('#EXT-X-ENDLIST') !== -1;
-
-            var vid_chunks_list = m3u_response.split('\n').filter(function (line) { //list of video chunks on current m3u playlist.
-                return /(^chunk_.+)/gm.test(line);
+            var m3uLines = m3u_response.split('\n')
+            var vid_chunks_list = m3uLines.filter(function (line) { //list of video chunks on current m3u playlist.
+                return !/(^#.+)/gm.test(line);
             });
 
+            g_encrypted == true ? '' : (g_encrypted = m3u_response.includes('#EXT-X-KEY'));
+            if (g_decryptionKey === null && g_encrypted){
+                var keyURI = m3u_response.split('\n').filter(function (line) {
+                    return /(^#EXT-X-KEY:.+)/g.test(line);
+                });
+                keyURI = keyURI[0].split('"')[1];
+                getKey(keyURI)
+            }
+            
+            if (g_encrypted) { //if encrypted fill g_chunkIvList with, video chunk name and it's initalization vector, objects
+                for (var i = 0; i < m3uLines.length; i++) {
+                    if (!/(^#.+)/gm.test(m3uLines[i])){
+                        g_chunkIvList[m3uLines[i]] = m3uLines[i - 2].split(',')[2].split('=')[1].slice(2) 
+                    }
+                }
+            }
             if (g_live_stream && !g_broadcastEnd && m3u_response.indexOf('#EXTM3U') !== -1) { //live running
                 m3u_response = '';
                 g_beginnig = false;
@@ -123,17 +144,48 @@ function intervals() {
     download_live();
 }
 
+function getKey(keyURI) {
+    var options = request_options(keyURI);
+    var dataParts = [];
+    https.get(options, function (res) {
+        if (res.statusCode == 200) {
+            res.on('data', function (chunk) {
+                dataParts.push(chunk);
+            }).on('end', function () {
+                g_decryptionKey = Buffer.concat(dataParts);
+            });
+        } else {
+            console.log('No access to decryption key, statusCode:', res.statusCode);
+            process.exit();
+        }
+    }).on('error', function (e) {
+        console.log('Warning download Key error: ' + e.code);
+        process.exit();
+    });
+}
+
+function decrypt(encryptedBuffer, chunk_name){
+    var iv = new Buffer(g_chunkIvList[chunk_name], "hex")
+        var decrypt = crypto.createDecipheriv('aes-128-cbc', g_decryptionKey, iv)
+        var decryptedBuffer = Buffer.concat([decrypt.update(encryptedBuffer) , decrypt.final()]);
+    return decryptedBuffer;
+}
+
 function process_playlist(vid_chunks) {
     if (vod) { //don't download everything at once to prevent issues with very long VODs 
-        var chunksToDownload = [];
-        var chunkUrl = [];
-        g_allChunksToDownload = vid_chunks;
-        g_allChunksToDownload.length < g_simultaneous_down ? g_simultaneous_down = g_allChunksToDownload.length : '';
+        if((g_encrypted && g_decryptionKey)||(!g_encrypted)){
+            var chunksToDownload = [];
+            var chunkUrl = [];
+            g_allChunksToDownload = vid_chunks;
+            g_allChunksToDownload.length < g_simultaneous_down ? g_simultaneous_down = g_allChunksToDownload.length : '';
 
-        for (var i = 0; i < g_simultaneous_down; i++) {
-            chunkUrl[i] = url.resolve(g_m3u_url, g_allChunksToDownload[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
-            chunksToDownload.push(g_allChunksToDownload[i]);
-            download_vod(chunkUrl[i], g_allChunksToDownload[i], chunksToDownload);
+            for (var i = 0; i < g_simultaneous_down; i++) {
+                chunkUrl[i] = url.resolve(g_m3u_url, g_allChunksToDownload[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
+                chunksToDownload.push(g_allChunksToDownload[i]);
+                download_vod(chunkUrl[i], g_allChunksToDownload[i], chunksToDownload);
+            }
+        }else{
+            setTimeout(process_playlist.bind(null, vid_chunks), 1000);//if key not available try again after some time /async workaround
         }
     } else { //live
         vid_chunks.forEach(function (vid_chunk) {
@@ -194,6 +246,10 @@ function download_live() {
                     var chunkBuffer = Buffer.concat(dataParts);
                    
                     if(res.headers['content-length'] == chunkBuffer.length){
+                        if (g_encrypted){
+                            chunkBuffer = decrypt(chunkBuffer, g_cTodownload[i]);
+                        }
+
                         fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
                             encoding: 'binary'
                         }, function (err) {
@@ -268,6 +324,9 @@ function download_vod(file_url, chunk_name, chunksToDownload) {
                 var chunkBuffer = Buffer.concat(dataParts);
 
                 if(res.headers['content-length'] == chunkBuffer.length){
+                    if (g_encrypted){
+                        chunkBuffer = decrypt(chunkBuffer, chunk_name);
+                    }
                     fs.writeFile(g_DOWNLOAD_DIR + g_TEMP + chunk_name, chunkBuffer, function(){
                         g_readyToAppend.push(chunk_name); //add to list of downloaded video chunks for concatenation
                         g_allChunksToDownload.shift();
