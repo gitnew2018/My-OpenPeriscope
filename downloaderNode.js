@@ -40,6 +40,12 @@ var g_m3u_url = process.argv[2],
     g_chunkIvList = {},//  videochunk name + Initialization vector pairs
     g_encrypted = false;
 
+    //to debug this downloader use this function below as you would console.log
+    //no need to restart app just start downloading next file after you saved changes to this file
+    //you can use JSON.stringify(*array*,null,2) to pretty-print your logs
+    //you can output multiple log files just change downloader_log.txt to something else.
+    //fs.appendFile(process.argv[3] + '/' + 'downloader_log.txt', (/* what to log to a file */ + '\n'), 'utf8', function () {/*what to do after log file was created*/});
+
 get_playlist(g_m3u_url);
 
 function request_options(requestUrl, meth) {

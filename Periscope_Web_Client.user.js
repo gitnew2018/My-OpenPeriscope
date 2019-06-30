@@ -333,7 +333,7 @@ var Notifications = {
                                     }else if(replay){
                                         limitAddIDs(broadcastsWithLinks, _broadcast_info.id, 100, []);
                                         var ffmpeg_cookies = [];
-                                        /* drkchange09 */ var downloader_cookies = 'sid='+loginTwitter.cookie;
+                                        /* drkchange09 */ var downloader_cookies = 'sid='+loginTwitter.cookie + ';';
                                         var clipboardLink = $('<a data-clipboard-text="' + replay + '" class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Copy ' + (_partial_replay ? 'partial ' : '') + 'replay URL">'+ (_partial_replay ? 'Copy PR_URL':'Copy R_URL') +'</a>');
                                         new ClipboardJS(clipboardLink.get(0));
                                         /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2">' + (_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
@@ -2094,7 +2094,7 @@ function getM3U(id, jcontainer) {
             }
             params += 'Expires=0';
         }
-    /* drkchange09 */ var downloader_cookies = 'sid='+loginTwitter.cookie;
+        /* drkchange09 */ var downloader_cookies = 'sid='+loginTwitter.cookie + ';';
         limitAddIDs(broadcastsWithLinks, id, 100, []);
         if (hls_url) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '" class="linkLive button2" title="Copy live broadcast URL">Copy URL</a>');
@@ -2230,7 +2230,7 @@ function download(name, url, cookies, user_id, user_name, /* drkchange06 */broad
             } else {
                 num ? name = name + num : '';
                 ///////////////////////////////////////////////////////////////* drkchange04 */ 
-                var downloader_cookies ='sid=' + loginTwitter.cookie;              
+                var downloader_cookies = 'sid='+loginTwitter.cookie + ';';             
                 const spawn = require('child_process').spawn(process.execPath, [
                     'downloaderNode.js',
                     url,
