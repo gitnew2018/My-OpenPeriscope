@@ -766,7 +766,7 @@ span.sProducer {
 
 .newHighlight {
     background-color: #2F2F2F;
-    box-shadow: 0 0 2px 2px #696969;
+    box-shadow: 1.5px 0 0px 2px #838383;
 }
 
 .card.downloading {
