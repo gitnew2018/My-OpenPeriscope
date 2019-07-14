@@ -95,7 +95,6 @@ function get_playlist(urlLink) {
             } else {
                 if (m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1) { //VOD
                     if (vid_chunks_list.length) {
-                        vod = true;
                         g_allChunks = vid_chunks_list;
                         download_vod()
                     }else{

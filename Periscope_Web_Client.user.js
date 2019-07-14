@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.8
+// @version     0.1.9
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -48,17 +48,20 @@ if (NODEJS) {  // for NW.js
         options.hostname = u.hostname;
         options.path = u.path;
         options.protocol = u.protocol;
-        var chunks = [];
+        var chunks = '';
+        var chunks2 = [];// needed for binary decryption key
         var req = https.request(options, function (res) {
             // res.setEncoding('utf8');
             res.on('data', function (chunk) {
-                chunks.push(chunk);
+                chunks += chunk;
+                chunks2.push(chunk);
             });
             res.on('end', function() {
                 onload({
                     status: res.statusCode,
                     responseText: chunks,
-                    headers: res.headers
+                    finalUrl: res.headers['location'],
+                    responseArray: chunks2
                 });
             });
         });
@@ -797,13 +800,13 @@ Search: function () {
             onload: function (r) {
                 Progress.stop();
                 if (r.status == 200) {
-                    var response = JSON.parse(r.responseText.join(''));
+                    var response = JSON.parse(r.responseText);
                     if ($('#debug')[0].checked)
                         console.log('channels' + (cid ? ' cid ' + cid : '') + ': ', response);
                     callback(response);
                 }
                 else
-                    console.log('channels error: ' + r.status + ' ' + r.responseText.join(''));
+                    console.log('channels error: ' + r.status + ' ' + r.responseText);
             }
         });
     }
@@ -1268,7 +1271,7 @@ Chat: function () {
                     }),
                     onload: function (history) {
                         if (history.status == 200) {
-                            history = JSON.parse(history.responseText.join(''));
+                            history = JSON.parse(history.responseText);
                             for (var i in history.messages)
                                 processWSmessage(history.messages[i], container || historyDiv);
                             if (history.cursor != '')
@@ -1412,7 +1415,7 @@ Chat: function () {
                             }),
                             onload: function (history) {
                                 if (history.status == 200) {
-                                    history = JSON.parse(history.responseText.join(''));
+                                    history = JSON.parse(history.responseText);
                                     for (var i in history.messages) {
                                         var contains = false;
                                         for (var j = 0; j < prevMessages.length && !contains; j++) // if prevMessages contains meesage
@@ -1709,7 +1712,7 @@ Edit: function () {
     /* drkchange15 */var show_m3u_links = $('<label><input type="checkbox" ' + (settings.showM3Ulinks ? 'checked' : '') + '/> Show M3U links</label>').click(function (e) {
         setSet('showM3Ulinks', e.target.checked);
     });
-    /* drkchange14 */var show_partial_links = $('<label><input type="checkbox" ' + (settings.showPRlinks === false ? '' : 'checked') + '/> Show partial replay(PR) links</label>').click(function (e) {
+    /* drkchange14 */var show_partial_links = $('<label><input type="checkbox" ' + (settings.showPRlinks ? 'checked' : '') + '/> Show partial replay(PR) links</label>').click(function (e) {
         setSet('showPRlinks', e.target.checked);
     });
     /* drkchange25 */var update_thumbnails = $('<label><input type="checkbox" ' + (settings.updateThumbnails ? 'checked' : '') + '/> Auto update thumbnails</label>').click(function (e) {
@@ -2113,12 +2116,7 @@ function linkRedirection301(replay_url, callback){
             'cookie': downloader_cookies
         },
         onload: function (res) {
-            replay_url = res.headers['location'];
-            var redirectCookies = res.headers['set-cookie'];
-            for (var cookie in redirectCookies) {
-                cookie = (redirectCookies[cookie] + '').split(/\s/).shift();
-                downloader_cookies += cookie;
-            }
+            replay_url = res.finalUrl;
             if (replay_url){//not "not found"
             callback(replay_url, downloader_cookies);
             }
@@ -2127,10 +2125,11 @@ function linkRedirection301(replay_url, callback){
 }
 
 function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){ /* drkchange28 */
-    got_M3U_playlist ? request(_url, getKey) : request(_url, getKeyUri);
+    got_M3U_playlist ? request(_url, getKey, 'arraybuffer') : request(_url, getKeyUri);
     cookies ? '': cookies = '';
-    function request(url,callback) {
+    function request(url, callback, respType) {
         GM_xmlhttpRequest({
+            responseType : respType,
             method: 'GET',
             url: url,
             headers: {
@@ -2138,7 +2137,7 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){ /
             },
             onload: function (response) {
                 if (response.status == 200) {
-                    callback(response.responseText)
+                    NODEJS ? callback(response.responseArray) : callback(response.responseText); 
                 }else{
                     mainCallback? mainCallback(true):'';//tell function to not attach links because obtaining key has failed
                 }
@@ -2147,18 +2146,20 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){ /
     }
 
     function getKeyUri(m3u_text) { // extract key uri from playlist
-            var keyURI = m3u_text.join('').split('\n').filter(function (line) {
+        NODEJS ? m3u_text = m3u_text.join('') : '';
+        var keyURI = m3u_text.split('\n').filter(function (line) {
                 return /(^#EXT-X-KEY:.+)/g.test(line);
             });
             if (!keyURI[0])// broadcast starts but has o chunks AND key uri on the playlist
                 return; //TODO retry after 10s or so
             keyURI = keyURI[0].split('"')[1];
-            request(keyURI, getKey);
+            request(keyURI, getKey, 'arraybuffer');
     }
 
     function getKey(respKey){
-        var base = Buffer.concat(respKey);
-        var base64key  = new Buffer(base, 'binary').toString('base64');
+        NODEJS ? respKey = respKey[0] : '';
+        var base = new Uint8Array(respKey);
+        var base64key = btoa(String.fromCharCode.apply(null, base));
 
         limitAddIDs(broadcastsWithLinks, id, 200, []);
         broadcastsWithLinks.addToBroadcastsLinks(id,{decryptKey : base64key})
@@ -2211,7 +2212,7 @@ function getM3U(id, jcontainer) {
                     Cookie: cookies
                 },
                 onload: function (m3u_text) {
-                    m3u_text = m3u_text.responseText.join('').replace(/(^[^#][^\s].*)/gm, replay_base_url + '$1'); /* drkchange fix regex */
+                    m3u_text = m3u_text.responseText.replace(/(^[^#][^\s].*)/gm, replay_base_url + '$1'); /* drkchange fix regex */
                     var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="playlist.m3u8">Download' + /* drkchange14 */(_partial_replay ? ' PR ' : ' replay ' ) + 'M3U</a>').click(saveAs.bind(null, m3u_text, 'playlist.m3u8'));
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + /* drkchange14 */(_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (locked ? (' ' + '&quot;' + cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
@@ -2723,7 +2724,7 @@ function Api(method, params, callback, callback_fail) {
             switch (r.status) {
                 case 200:
                     try {
-                        response = JSON.parse(r.responseText.join(''));
+                        response = JSON.parse(r.responseText);
                     } catch (e) {
                         if (debug)
                             console.warn('JSON parse error:', e);
@@ -2733,13 +2734,13 @@ function Api(method, params, callback, callback_fail) {
                     $(window).trigger('scroll');    // for lazy load
                     break;
                 case 406:
-                    alert(JSON.parse(r.responseText.join('')).errors[0].error);
+                    alert(JSON.parse(r.responseText).errors[0].error);
                     break;
                 case 401:
                     SignOut();
                     break;
                 default:
-                    response = 'API error: ' + r.status + ' ' + r.responseText.join('');
+                    response = 'API error: ' + r.status + ' ' + r.responseText;
                     if (callback_fail && Object.prototype.toString.call(callback_fail) === '[object Function]')
                         callback_fail(response);
             }
@@ -2835,7 +2836,7 @@ function OAuth(endpoint, _method, callback, extra) {
         onload: function (r) {
             if (r.status == 200) {
                 var oauth = {};
-                var response = r.responseText.join('').split('&');
+                var response = r.responseText.split('&');
                 for (var i in response) {
                     var kv = response[i].split('=');
                     oauth[kv[0]] = kv[1];
@@ -2843,11 +2844,11 @@ function OAuth(endpoint, _method, callback, extra) {
                 callback(oauth);
             }
             else if (r.status == 401) {   // old tokens: reload page
-                console.log('oauth error 401: ' + r.responseText.join(''));
+                console.log('oauth error 401: ' + r.responseText);
                 SignOut();
             }
             else
-                console.log('oauth error: ' + r.status + ' ' + r.responseText.join(''));
+                console.log('oauth error: ' + r.status + ' ' + r.responseText);
         }
     });
 }
@@ -2914,7 +2915,7 @@ function OAuthDigits(endpoint, options, callback) {
         onload: function (r) {
             Progress.stop();
             if (r.status == 200)
-                callback(JSON.parse(r.responseText.join('').replace(/"login_verification_user_id":(\d+)/, '"login_verification_user_id":"$1"'))); // fix for integral precision in JS
+                callback(JSON.parse(r.responseText.replace(/"login_verification_user_id":(\d+)/, '"login_verification_user_id":"$1"'))); // fix for integral precision in JS
             else if (r.status == 401 || r.status == 400)   // wrong sms code
                 alert('Authorization error!');
         }
