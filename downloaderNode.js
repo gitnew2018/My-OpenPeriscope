@@ -14,36 +14,60 @@ process.stdin.on('data', function (msg) {
     }
 });
 
-var g_m3u_url = process.argv[2],
-    g_DOWNLOAD_DIR = process.argv[3],
-    g_fileName = process.argv[4],
-    g_cookies = process.argv[5] || '',
-    g_savedDecryptionKey = process.argv[6] || null, /////////////
+var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
+    g_replay_m3u_url = process.argv[process.argv.indexOf('-rurl') + 1],
+    g_DOWNLOAD_DIR = process.argv[process.argv.indexOf('-dir') + 1],
+    g_fileName = process.argv[process.argv.indexOf('-name') + 1],
+    g_cookies = process.argv[process.argv.indexOf('-cookies') + 1],
+    g_savedDecryptionKey = process.argv[process.argv.indexOf('-key') + 1],
     g_live_stream = null,
     g_liveTimeout,
     g_timingOut = false,
-    g_allChunks = [],
-    g_chunksToDownload = [],
-    g_cTodownload = [],
+    g_all_chunks = [], //[chunkxxxx0.ts, chunkxxxx1.ts, ...]
+    g_live_chunks_queue = [],
+    g_all_replay_chunks = [],
+    g_chunks_downloading = [],
     g_live_End,
     g_retries = 70, // number of errors that can happen before downloding stops.
     g_beginnig = true, //skip first timeout
+    g_mainInterval,
     g_timeoutInterval,
+    g_vod_done = false,
+    g_download_Whole = false,
     g_decryptionKey,
-    g_chunkIvList = {},//  videochunk name + Initialization vector pairs
+    g_chunkIvList = {}, //  videochunk name + Initialization vector pairs
     g_chunksNotAvailable = 0,
     g_nokey = 0,
     g_encrypted = null;
-
-g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = new Buffer(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
 
 //to debug this downloader use this function below as you would console.log
 //no need to restart app just start downloading next file after you saved changes to this file
 //you can use JSON.stringify(*array*,null,2) to pretty-print your logs
 //you can output multiple log files just change g_fileName.txt to something else.
 //fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (/* what to log to a file */ + '\n'), 'utf8', function () {/*what to do after log file was created*/});
-    
-get_playlist(g_m3u_url);
+
+//for debugging, this will keep process running after error, and log it to txt file
+// process.on('uncaughtException', function (err) {
+//     fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '_ERR.txt', ( JSON.stringify(err,null,2) + '\n'), 'utf8', function () {});
+// });
+
+g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = new Buffer(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
+g_m3u_url === ('null' || 'undefined') ? g_m3u_url = '' : '';
+g_replay_m3u_url === ('null' || 'undefined') ? g_replay_m3u_url = '' : '';
+(g_m3u_url && g_replay_m3u_url) ? g_download_Whole = true: '';
+
+
+if (g_download_Whole) {
+    g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000);
+    get_playlist(g_replay_m3u_url);
+
+} else if (g_replay_m3u_url) {
+    get_playlist(g_replay_m3u_url);
+
+} else {
+    g_vod_done = true;
+    get_playlist(g_m3u_url);
+}
 
 function request_options(requestUrl, meth) {
     var options = {
@@ -68,72 +92,86 @@ function get_playlist(urlLink) {
         });
         res.on('end', function () {
             var m3u_response = responseParts.join('').trim();
-// fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (m3u_response + '\n'), 'utf8', function () {});
+            // fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (m3u_response + '\n'), 'utf8', function () {});
             g_live_End = ((m3u_response.lastIndexOf('#EXT-X-ENDLIST') !== -1) && !(m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1));
-            var m3uLines = m3u_response.split('\n')
-            var vid_chunks_list = m3uLines.filter(function (line) { //list of video chunks on current m3u playlist.
-                return !/(^#.+)/.test(line);
-            });
+            var m3uLines = m3u_response.split('\n');
+
+            var vid_chunks_list = m3uLines.reduce(function (total, line) { //list of video chunks on current m3u playlist.
+                !/(^#.+)/.test(line) ? total.push(line.split('?')[0]) : '';
+                return total;
+            }, []);
 
             g_encrypted === null ? (g_encrypted = m3u_response.includes('#EXT-X-KEY')) : '';
             if ((g_decryptionKey === null) && g_encrypted) {
                 var keyURI = (/(^#EXT-X-KEY:.+)/m.exec(m3u_response))[0].split('"')[1];
-                getKey(keyURI,0)
+                getKey(keyURI, 0);
             }
-            
+
             if (g_encrypted) { //if encrypted fill g_chunkIvList with, video chunk name and it's initalization vector, objects
                 for (var i = 0; i < m3uLines.length; i++) {
-                    if (!/(^#.+)/.test(m3uLines[i])){//finds chunkxxxx.ts lines
-                        g_chunkIvList[m3uLines[i]] = m3uLines[i - 2].split(',')[2].split('=')[1].slice(2) //{chunkxxxx0.ts : d37d7010a581ce952a7c9fffdb22fd77, ...}
+                    if (!/(^#.+)/.test(m3uLines[i])) { //finds chunkxxxx.ts lines
+                        g_chunkIvList[m3uLines[i].split('?')[0]] = m3uLines[i - 2].split(',')[2].split('=')[1].slice(2); //{chunkxxxx0.ts : d37d7010a581ce952a7c9fffdb22fd77, ...}
                     }
                 }
             }
-            
-            if (g_live_stream && !g_live_End && m3u_response.indexOf('#EXTM3U') !== -1) { //live running
+
+            if (g_live_stream && m3u_response.indexOf('#EXTM3U') !== -1) { //live running
                 g_beginnig = false;
-                download_live(vid_chunks_list);
+                vid_chunks_list.forEach(function (vid_chunk) {
+                    if (g_all_chunks.lastIndexOf(vid_chunk) === -1) {
+                        g_all_chunks.push(vid_chunk);
+                        g_live_chunks_queue.push(vid_chunk);
+                    }
+                });
+                if (g_vod_done) {
+                    download_live(g_live_End);
+                }
+
             } else {
-                if (m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1) { //VOD
+                var vod = m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1;
+                if (vod) { //VOD
+                    g_download_Whole ? get_playlist(g_m3u_url) : '';
                     if (vid_chunks_list.length) {
-                        g_allChunks = vid_chunks_list;
-                        download_vod()
-                    }else{
-                        (process.send('Error Nothing to download'),process.exit());
+                        g_all_replay_chunks = vid_chunks_list;
+                        download_vod();
                     }
 
                 } else if (m3u_response.indexOf('#EXT-X-STREAM-INF') !== -1) { // multiple qulities playlist. some producer videos have it.
                     var availableStreamsURLs = m3u_response.split('\n').filter(function (line) { //list of available streams.
                         return /^\/.+/gm.test(line);
                     });
-                    g_m3u_url = url.resolve('https://' + url.parse(urlLink).host + '/', availableStreamsURLs[availableStreamsURLs.length - 1]);//pick the best quality one
-                    get_playlist(g_m3u_url);
+                    var newLink = url.resolve('https://' + url.parse(urlLink).host + '/', availableStreamsURLs[availableStreamsURLs.length - 1]); //pick the best quality one
+                    vod ? (g_m3u_url = newLink) : (g_replay_m3u_url = newLink);
+                    get_playlist(newLink);
 
-                } else if (m3u_response.indexOf('#EXTM3U') !== -1) { // live
-                    download_live(vid_chunks_list);
-                    if (g_live_End && !g_chunksToDownload.length && !g_cTodownload.length) { //end of live
-                        process.send('End of broadcast');
-                        process.exit();
-                    } else if ((g_live_stream !== false) && !g_live_End) { // live start
-                        g_live_stream = true;
-                        download_live(vid_chunks_list);
-                        setInterval(get_playlist.bind(null, g_m3u_url), 4000);//periodically check for updated playlist
+                } else if ((g_live_stream === null) && !g_live_End && m3u_response.indexOf('#EXTM3U') !== -1) { // live start
+                    if (g_download_Whole) {
+                        g_live_chunks_queue = g_live_chunks_queue.filter(function (elem) {
+                            if (g_all_replay_chunks.indexOf(elem) === -1) {
+                                return elem;
+                            }
+                        });
+                        g_all_chunks = g_all_replay_chunks.concat(g_live_chunks_queue);
+                    } else {
+                        g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000); //periodically check for updated playlist
                     }
+                    g_live_stream = true;
 
                 } else {
-                    process.send('Warning error, status code: ' + res.statusCode)
                     // no valid playlist
-                    if (g_live_stream === null) { //some broadcasts begin with no valid playlists, treat it as live, with timeout
+                    if (g_live_stream === null && g_m3u_url) { //some broadcasts begin with no valid playlists, treat it as live, with timeout
                         g_live_stream = true;
-                        setInterval(get_playlist.bind(null, g_m3u_url), 4000);//periodically check for updated playlist
+                        g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000); //periodically check for updated playlist
                     }
-                    timeout_check(60);
+                    timeout_check(60, ('Warning playlist error, status code: ' + res.statusCode));
                 }
             }
         }).on('error', function (e) {
-            process.send('Warning error when trying to get m3u file: ' + e) //display on card
             process.send(e) //save for log
-            setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
-            timeout_check(30);
+            if (g_m3u_url) {
+                setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
+            }
+            timeout_check(30, ('Warning error when trying to get m3u file: ' + e));
         });
     });
 }
@@ -162,26 +200,27 @@ function getKey(keyURI, i) {
     });
 }
 
-function decrypt(encryptedBuffer, chunk_name){
+function decrypt(encryptedBuffer, chunk_name) {
     var iv = new Buffer(g_chunkIvList[chunk_name], "hex");
     var decrypt = crypto.createDecipheriv('aes-128-cbc', g_decryptionKey, iv);
     var decryptedBuffer = Buffer.concat([decrypt.update(encryptedBuffer), decrypt.final()]);
     return decryptedBuffer;
 }
 
-function timeout_check(time) {
-    if (((g_chunksToDownload.length === 0) && !g_timingOut && !g_live_End) || (g_live_stream === null && !g_beginnig)) {
-        var counter = 4;//4 because of 4s interval
+function timeout_check(time, msg) {
+    if (((g_live_chunks_queue.length === 0) && !g_timingOut && !g_live_End) || (g_live_stream === null && !g_beginnig)) {
+        var counter = 4; //4 because of 4s interval
+        
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
-            process.send('Time out');
-            process.exit();
+            endDownloading('Timeout', true);
         }, time * 1000);
-        g_timeoutInterval = setInterval(function(){
+        g_timeoutInterval = setInterval(function () {
             counter++;
-            counter > 10 ? process.send('No new video chunks in the last ' + counter + 's') : '';
+            !msg ? msg = ('No new video chunks in the last ' + counter + 's') : '';
+            counter > 10 ? process.send(msg) : '';
         }, 1000);
-    } else if (((g_chunksToDownload.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
+    } else if (((g_live_chunks_queue.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
         clearInterval(g_timeoutInterval)
         g_timingOut = false;
@@ -189,51 +228,43 @@ function timeout_check(time) {
     }
 }
 
-function download_live(vid_chunks) {
-    vid_chunks.forEach(function (vid_chunk) {
-        if (g_allChunks.lastIndexOf(vid_chunk) !== -1){ //already downloaded 
-        }else{
-            g_allChunks.push(vid_chunk);
-            g_chunksToDownload.push(vid_chunk);
-        }
-    });
-
+function download_live(end) {
     timeout_check(120);
-    !g_beginnig ?  process.send('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
+    !g_beginnig ? process.send('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
 
-    if((g_encrypted && g_decryptionKey)||(!g_encrypted)){
-        if (!g_cTodownload.length && g_chunksToDownload.length) {
+    if ((g_encrypted && g_decryptionKey) || (!g_encrypted)) {
+        if (!g_chunks_downloading.length && g_live_chunks_queue.length) {
             var i = 0;
-            g_cTodownload = g_chunksToDownload.slice();
-            g_cTodownload.forEach(function () {
-                g_chunksToDownload.shift();
+            g_chunks_downloading = g_live_chunks_queue.slice();
+            g_chunks_downloading.forEach(function () {
+                g_live_chunks_queue.shift();
             });
             download_file_recur(i);
         }
-    }else{
-        (g_nokey === 3) ? process.exit() :'';
+    } else {
+        (g_nokey === 3) ? process.exit(): '';
         g_nokey += 1;
-        setTimeout(download_live.bind(null, vid_chunks), 1000);//if key not available try again after some time /async workaround
+        setTimeout(download_live.bind(null, end), 1000); //if key not available try again after some time /async workaround
     }
 
     function download_file_recur(i) {
-        if (i === g_cTodownload.length) {
-            g_cTodownload = [];
+        if (i === g_chunks_downloading.length) {
+            g_chunks_downloading = [];
+            end ? endDownloading('End of broadcast', true) : '';
         } else {
-            var file_url = url.resolve(g_m3u_url, g_cTodownload[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
+            var file_url = url.resolve(g_m3u_url, g_chunks_downloading[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
             var options = request_options(file_url);
             var dataParts = [];
 
             https.get(options, function (res) {
                 res.on('data', function (data) {
                     dataParts.push(data);
-                });
-                res.on('end', function () {
+                }).on('end', function () {
                     var chunkBuffer = Buffer.concat(dataParts);
-                
-                    if(res.headers['content-length'] === chunkBuffer.length.toString()){
-                        if (g_encrypted){
-                            chunkBuffer = decrypt(chunkBuffer, g_cTodownload[i]);
+
+                    if (res.headers['content-length'] === chunkBuffer.length.toString()) {
+                        if (g_encrypted) {
+                            chunkBuffer = decrypt(chunkBuffer, g_chunks_downloading[i]);
                         }
 
                         fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
@@ -258,56 +289,59 @@ function download_live(vid_chunks) {
                                 download_file_recur(i);
                             }
                         });
-                    }else{
+                    } else {
                         download_file_recur(i)
                     }
-                });
-            }).on('error', function (e) {
-                process.send('Warning download file error: ' + e);
-                if (g_retries > 0) {
-                    g_retries -= 1;
-                    setTimeout(download_file_recur.bind(null, i), 500);
-                } else {
-                    process.send('Error downloading file|  Exiting: '+ e);
-                    process.send(e);
-                    throw e;
-                }
-            }).setTimeout(20000, function() {
+                }).on('error', function (e) {
+                    process.send('Warning download file error: ' + e);
+                    if (g_retries > 0) {
+                        g_retries -= 1;
+                        setTimeout(download_file_recur.bind(null, i), 500);
+                    } else {
+                        process.send('Error downloading file|  Exiting: ' + e);
+                        process.send(e);
+                        throw e;
+                    }
+                }).setTimeout(20000, function () {
                     this.abort();
+                });
             });
         }
     }
 }
+
 function download_vod() {
-    if((g_encrypted && g_decryptionKey)||(!g_encrypted)){
+    if ((g_encrypted && g_decryptionKey) || (!g_encrypted)) {
         var i = 0;
         download_vod_recur(i);
-    }else{
-        (g_nokey === 3) ? process.exit() :'';
+    } else {
+        (g_nokey === 3) ? process.exit(): '';
         g_nokey += 1;
-        setTimeout(download_vod, 1000);//if key not available try again after some time /async workaround
+        setTimeout(download_vod, 1000); //if key not available try again after some time /async workaround
     }
 
     function download_vod_recur(i) {
-        if (i === g_allChunks.length) {
-            g_chunksNotAvailable ? process.send('Finished, missing ' + g_chunksNotAvailable + ' parts') : process.send('Done');
-            process.exit();
+        if (i === (g_all_replay_chunks.length - g_chunksNotAvailable)) {
+            if(g_download_Whole){
+                endDownloading((g_chunksNotAvailable ? 'Peplay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false)
+            }else{
+                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false)
+            }
         } else {
-            var progress = Math.round((i / g_allChunks.length) * 100) + '%';
+            var progress = Math.round(((i + 1) / (g_all_replay_chunks.length - g_chunksNotAvailable)) * 100) + '%';
             process.send(progress);
 
-            var file_url = url.resolve(g_m3u_url, g_allChunks[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
+            var file_url = url.resolve(g_replay_m3u_url, g_all_replay_chunks[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
             var options = request_options(file_url);
             var dataParts = [];
 
             https.get(options, function (res) {
                 res.on('data', function (data) {
                     dataParts.push(data);
-                });
-                res.on('end', function () {
+                }).on('end', function () {
                     if (res.statusCode == 404) {
                         process.send('404')
-                        fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (file_url + ' <= was not found, Video is incomplete: ' + res.statusCode + ' chunk number: ' + i + '\n'), 'utf8', function () {});
+                        fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (file_url + ' <= was not found, Video is incomplete: ' + res.statusCode + '\n'), 'utf8', function () {});
                         g_chunksNotAvailable += 1;
                         i += 1;
                         download_vod_recur(i);
@@ -316,7 +350,7 @@ function download_vod() {
 
                         if (res.headers['content-length'] === chunkBuffer.length.toString()) {
                             if (g_encrypted) {
-                                chunkBuffer = decrypt(chunkBuffer, g_allChunks[i]);
+                                chunkBuffer = decrypt(chunkBuffer, g_all_replay_chunks[i]);
                             }
 
                             fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
@@ -360,6 +394,23 @@ function download_vod() {
             })
         }
     }
+}
+
+function endDownloading(message, isLive) {
+    process.send(message);
+    setTimeout(function () {
+        if (g_download_Whole) {
+            if (isLive) {
+                clearInterval(g_mainInterval);
+                clearInterval(g_timeoutInterval);
+                process.exit()
+            } else {
+                g_vod_done = true;
+            }
+        } else {
+            process.exit()
+        }
+    }, 1000);
 }
 
 function formatTime(time) {
