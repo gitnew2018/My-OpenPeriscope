@@ -37,6 +37,8 @@ Unofficial in-browser client for Periscope (userscript)
 * Seach by @username not only by user id (drkchange26)
 * Screenlist now changed to screenPreviewer (drkchange01)
 * Added input field to download manager to quickly download from web link (drkchange27)
+* You can download private broadcasts that were deleted (drkchange28)
+* Added Download whole broadcast button(combine partial replay with live running broadcast into one) (drkchange27)
 
 ### Using as standalone application
 
