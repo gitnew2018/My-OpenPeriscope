@@ -48,7 +48,10 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
 
 //for debugging, this will keep process running after error, and log it to txt file
 // process.on('uncaughtException', function (err) {
-//     fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '_ERR.txt', ( JSON.stringify(err,null,2) + '\n'), 'utf8', function () {});
+//     fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '_ERR.txt', ('uncaughtException:::'+JSON.stringify(err, null, 2) + '\n'), 'utf8', function () {});
+//     setTimeout(function() {
+//         process.exit();//remove this to keep it running
+//     }, 1000);
 // });
 
 g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = new Buffer(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
@@ -101,7 +104,9 @@ function get_playlist(urlLink) {
                 return total;
             }, []);
 
-            g_encrypted === null ? (g_encrypted = m3u_response.includes('#EXT-X-KEY')) : '';
+            if (g_encrypted === null && vid_chunks_list.length)
+                (g_encrypted = m3u_response.includes('#EXT-X-KEY'));
+
             if ((g_decryptionKey === null) && g_encrypted) {
                 var keyURI = (/(^#EXT-X-KEY:.+)/m.exec(m3u_response))[0].split('"')[1];
                 getKey(keyURI, 0);
@@ -166,13 +171,13 @@ function get_playlist(urlLink) {
                     timeout_check(60, ('Warning playlist error, status code: ' + res.statusCode));
                 }
             }
-        }).on('error', function (e) {
-            process.send(e) //save for log
-            if (g_m3u_url) {
-                setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
-            }
-            timeout_check(30, ('Warning error when trying to get m3u file: ' + e));
         });
+    }).on('error', function (e) {
+        process.send(e) //save for log
+        if (g_m3u_url) {
+            setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
+        }
+        timeout_check(60, ('Warning error when trying to get m3u file: ' + e));
     });
 }
 
@@ -209,16 +214,15 @@ function decrypt(encryptedBuffer, chunk_name) {
 
 function timeout_check(time, msg) {
     if (((g_live_chunks_queue.length === 0) && !g_timingOut && !g_live_End) || (g_live_stream === null && !g_beginnig)) {
-        var counter = 4; //4 because of 4s interval
-        
+        var counter = 0;
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
             endDownloading('Timeout', true);
         }, time * 1000);
         g_timeoutInterval = setInterval(function () {
             counter++;
-            !msg ? msg = ('No new video chunks in the last ' + counter + 's') : '';
-            counter > 10 ? process.send(msg) : '';
+            var defaultMsg = ('No new video chunks in the last ' + counter + 's');
+            counter > 10 ? process.send(msg ? msg : defaultMsg) : '';
         }, 1000);
     } else if (((g_live_chunks_queue.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
@@ -232,7 +236,7 @@ function download_live(end) {
     timeout_check(120);
     !g_beginnig ? process.send('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
 
-    if ((g_encrypted && g_decryptionKey) || (!g_encrypted)) {
+    if ((g_encrypted && g_decryptionKey) || (g_encrypted === false)) {
         if (!g_chunks_downloading.length && g_live_chunks_queue.length) {
             var i = 0;
             g_chunks_downloading = g_live_chunks_queue.slice();
@@ -262,56 +266,64 @@ function download_live(end) {
                 }).on('end', function () {
                     var chunkBuffer = Buffer.concat(dataParts);
 
-                    if (res.headers['content-length'] === chunkBuffer.length.toString()) {
-                        if (g_encrypted) {
-                            chunkBuffer = decrypt(chunkBuffer, g_chunks_downloading[i]);
-                        }
-
-                        fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
-                            encoding: 'binary'
-                        }, function (err) {
-                            if (err) {
-                                process.send('Error appending live chunk: ' + err.code); // log error and try to continue
-                                if (err.code === 'ENOENT') {
-                                    process.send('Error no folder |  Exiting.');
-                                    throw err;
-                                }
-                                if (g_retries > 0) {
-                                    g_retries -= 1;
-                                    download_file_recur(i);
-                                } else {
-                                    process.send('Error appending live chunk |  Exiting: ' + err.code);
-                                    process.send(err);
-                                    throw err;
-                                }
-                            } else {
-                                i += 1;
-                                download_file_recur(i);
+                    if (res.statusCode == 200) {
+                        if (res.headers['content-length'] === chunkBuffer.length.toString()) {
+                            if (g_encrypted) {
+                                chunkBuffer = decrypt(chunkBuffer, g_chunks_downloading[i]);
                             }
-                        });
+
+                            fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
+                                encoding: 'binary'
+                            }, function (err) {
+                                if (err) {
+                                    process.send('Error appending live chunk: ' + err.code); // log error and try to continue
+                                    if (err.code === 'ENOENT') {
+                                        process.send('Error no folder, Exiting.');
+                                        throw err;
+                                    }
+                                    if (g_retries > 0) {
+                                        g_retries -= 1;
+                                        download_file_recur(i);
+                                    } else {
+                                        process.send('Error appending live chunk, Exiting: ' + err.code);
+                                        process.send(err);
+                                        throw err;
+                                    }
+                                } else {
+                                    i += 1;
+                                    download_file_recur(i);
+                                }
+                            });
+
+                        } else {
+                            download_file_recur(i)
+                        }
                     } else {
-                        download_file_recur(i)
+                        if (g_retries > 0) {
+                            g_retries -= 1;
+                            setTimeout(download_file_recur.bind(null, i), 500);
+                        }
                     }
-                }).on('error', function (e) {
-                    process.send('Warning download file error: ' + e);
-                    if (g_retries > 0) {
-                        g_retries -= 1;
-                        setTimeout(download_file_recur.bind(null, i), 500);
-                    } else {
-                        process.send('Error downloading file|  Exiting: ' + e);
-                        process.send(e);
-                        throw e;
-                    }
-                }).setTimeout(20000, function () {
-                    this.abort();
                 });
+            }).on('error', function (e) {
+                process.send('Warning download file error: ' + e);
+                if (g_retries > 0) {
+                    g_retries -= 1;
+                    setTimeout(download_file_recur.bind(null, i), 500);
+                } else {
+                    process.send('Error downloading file, Exiting: ' + e);
+                    process.send(e);
+                    throw e;
+                }
+            }).setTimeout(20000, function () {
+                this.abort();
             });
         }
     }
 }
 
 function download_vod() {
-    if ((g_encrypted && g_decryptionKey) || (!g_encrypted)) {
+    if ((g_encrypted && g_decryptionKey) || (g_encrypted === false)) {
         var i = 0;
         download_vod_recur(i);
     } else {
@@ -322,10 +334,10 @@ function download_vod() {
 
     function download_vod_recur(i) {
         if (i === (g_all_replay_chunks.length - g_chunksNotAvailable)) {
-            if(g_download_Whole){
-                endDownloading((g_chunksNotAvailable ? 'Peplay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false)
-            }else{
-                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false)
+            if (g_download_Whole) {
+                endDownloading((g_chunksNotAvailable ? 'Peplay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false);
+            } else {
+                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false);
             }
         } else {
             var progress = Math.round(((i + 1) / (g_all_replay_chunks.length - g_chunksNotAvailable)) * 100) + '%';
@@ -345,7 +357,7 @@ function download_vod() {
                         g_chunksNotAvailable += 1;
                         i += 1;
                         download_vod_recur(i);
-                    } else {
+                    } else if (res.statusCode == 200) {
                         var chunkBuffer = Buffer.concat(dataParts);
 
                         if (res.headers['content-length'] === chunkBuffer.length.toString()) {
@@ -359,14 +371,14 @@ function download_vod() {
                                 if (err) {
                                     process.send('Error appending vod chunk: ' + err.code); // log error and try to continue
                                     if (err.code === 'ENOENT') {
-                                        process.send('Error no folder |  Exiting.');
+                                        process.send('Error no folder, Exiting.');
                                         throw err;
                                     }
                                     if (g_retries > 0) {
                                         g_retries -= 1;
                                         download_vod_recur(i);
                                     } else {
-                                        process.send('Error appending live chunk |  Exiting: ' + err.code);
+                                        process.send('Error appending live chunk, Exiting: ' + err.code);
                                         throw err;
                                     }
                                 } else {
@@ -377,40 +389,45 @@ function download_vod() {
                         } else {
                             download_vod_recur(i)
                         }
-                    }
-                }).on('error', function (e) {
-                    process.send('Warning download file error: ' + e);
-                    if (g_retries > 0) {
-                        g_retries -= 1;
-                        setTimeout(download_vod_recur.bind(null, i), 500);
                     } else {
-                        process.send('Error downloading file|  Exiting: ' + e);
-                        process.send(e);
-                        throw e;
+                        if (g_retries > 0) {
+                            g_retries -= 1;
+                            setTimeout(download_vod_recur.bind(null, i), 1000);
+                        }
                     }
-                }).setTimeout(20000, function () {
-                    this.abort();
                 });
-            })
+            }).on('error', function (e) {
+                process.send('Warning download file error: ' + e);
+                if (g_retries > 0) {
+                    g_retries -= 1;
+                    setTimeout(download_vod_recur.bind(null, i), 500);
+                } else {
+                    process.send('Error downloading file,  Exiting: ' + e);
+                    process.send(e);
+                    throw e;
+                }
+            }).setTimeout(20000, function () {
+                this.abort();
+            });
         }
     }
 }
 
 function endDownloading(message, isLive) {
     process.send(message);
-    setTimeout(function () {
-        if (g_download_Whole) {
-            if (isLive) {
-                clearInterval(g_mainInterval);
-                clearInterval(g_timeoutInterval);
+    if (g_download_Whole) {
+        if (isLive) {
+            clearInterval(g_mainInterval);
+            clearInterval(g_timeoutInterval);
+            setTimeout(function () {
                 process.exit()
-            } else {
-                g_vod_done = true;
-            }
+            }, 1000)
         } else {
-            process.exit()
+            g_vod_done = true;
         }
-    }, 1000);
+    } else {
+        process.exit()
+    }
 }
 
 function formatTime(time) {
