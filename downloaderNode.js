@@ -95,14 +95,17 @@ function get_playlist(urlLink) {
         });
         res.on('end', function () {
             var m3u_response = responseParts.join('').trim();
-            // fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (m3u_response + '\n'), 'utf8', function () {});
-            g_live_End = ((m3u_response.lastIndexOf('#EXT-X-ENDLIST') !== -1) && !(m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1));
+// fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (m3u_response + '\n'), 'utf8', function () {});
+            var vod = m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1;
+            g_live_End = ((m3u_response.lastIndexOf('#EXT-X-ENDLIST') !== -1) && !vod);
             var m3uLines = m3u_response.split('\n');
 
             var vid_chunks_list = m3uLines.reduce(function (total, line) { //list of video chunks on current m3u playlist.
                 !/(^#.+)/.test(line) ? total.push(line.split('?')[0]) : '';
                 return total;
             }, []);
+
+            (!g_replay_m3u_url && vod) ? (g_replay_m3u_url = g_m3u_url, g_m3u_url = '') : '';
 
             if (g_encrypted === null && vid_chunks_list.length)
                 (g_encrypted = m3u_response.includes('#EXT-X-KEY'));
@@ -133,7 +136,6 @@ function get_playlist(urlLink) {
                 }
 
             } else {
-                var vod = m3u_response.indexOf('#EXT-X-PLAYLIST-TYPE:VOD') !== -1;
                 if (vod) { //VOD
                     g_download_Whole ? get_playlist(g_m3u_url) : '';
                     if (vid_chunks_list.length) {
