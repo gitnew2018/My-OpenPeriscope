@@ -771,7 +771,19 @@ Top: function () {
         Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
         Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
-    $('#right').append($('<div id="Top"/>').append(langDt, button, featured, ranked));
+    var refreshOnLoad = $('<label><input id="topRefreshOnLoad" type="checkbox" checked="true"> Refresh on load</label>')
+
+    var TopObj = $('<div id="Top"/>').append(langDt, button, refreshOnLoad, featured, ranked);
+    $('#right').append(TopObj);
+
+    TopObj.on("show", function() {
+        if (!$("#topRefreshOnLoad")[0].checked)
+            return;
+
+        ScrollPositions["Top"] = 0;
+        button.click();
+    });
+
     button.click();
 },
 Search: function () {
@@ -921,7 +933,20 @@ Following2: function () {
     /* drkchange23 */filterBox.append(languagesFilter, hideEnded, hideProducer)
     /* drkchange23 */var filtersToggle = $('<a class="button" style="float:right">Filters</a></br>').click(function(){filterBox.toggle()});
 
-    $('#right').append($('<div id="Following2"/>').append(button, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result));
+    var refreshOnLoad = $('<label><input id="following2RefreshOnLoad" type="checkbox" checked="true"> Refresh on load</label>')
+
+    var Following2Obj = $('<div id="Following2"/>');
+    Following2Obj.append(button, refreshOnLoad, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result)
+
+    Following2Obj.on("show", function() {
+        if (!$("#topRefreshOnLoad")[0].checked)
+            return;
+
+        ScrollPositions["Following2"] = 0;
+        button.click();
+    });
+
+    $('#right').append(Following2Obj);
     button.click();
 },
 Create: function () {
