@@ -1668,7 +1668,7 @@ Edit: function () {
     });
 
     if (NODEJS) {
-        var autoDownload = $('<label><input type="checkbox" ' + (settings.automaticDownload === false ? '' : 'checked') + '/> Enable automatic downloading of the following items</label>').click(function (e) {
+        var autoDownload = $('<label><input type="checkbox" ' + (settings.automaticDownload ? 'checked' : '') + '/> Enable automatic downloading of the following items</label>').click(function (e) {
             setSet('automaticDownload', e.target.checked);
             if (e.target.checked)
                 Notifications.start();
@@ -2326,7 +2326,7 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
 
         // For replay
         var replay_url = r.replay_url
-        if(replay_url && privateBroadacast ){ // 301 redrection For private replay
+        if(replay_url && privateBroadacast ){ // 301 redirection For private replay
             linkRedirection301(replay_url, ifReplay)
         }else if (replay_url){
                 ifReplay(replay_url, '');
@@ -2374,11 +2374,10 @@ function download(name, url, /* drkchange29 */rurl, cookies, user_id, user_name,
 
     /* drkchange08 */ output_name_check(0);
 
-    var otherProcessHasName = function(nameToCheck){
-        return childProcesses.reduce(function(nameDup, child){
-            (child.file_name === nameToCheck) ? nameDup = true :'';
-            return nameDup;
-        }, false);
+    var otherProcessHasName = function (nameToCheck) {
+        return childProcesses.some(function (child) {
+            return child.file_name === nameToCheck;
+        });
     }
     function output_name_check(num) {
         var x = num;
@@ -2531,7 +2530,7 @@ function getDescription(stream) {
                     var i = 0;\
                     bg.onmousemove = function (event) {\
                         i = Math.floor(event.offsetX / (widowWidth / len));\
-                        if (i >= len) i = len - 1;\
+                        if (i >= len) i = len;\
                         if (i < 1) i = 0;\
                         if (i != lastI) {\
                             if (images[i].complete)\
