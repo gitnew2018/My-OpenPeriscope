@@ -771,7 +771,16 @@ Top: function () {
         Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
         Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
-    var refreshOnLoad = $('<label><input id="topRefreshOnLoad" type="checkbox" checked="true"> Refresh on load</label>')
+
+    if (!settings.topRefreshOnLoad)
+        setSet('topRefreshOnLoad', false);
+
+    var refreshOnLoadBtn = $('<input id="topRefreshOnLoad" type="checkbox">').change(function () {
+        setSet('topRefreshOnLoad', this.checked);
+    });
+    refreshOnLoadBtn.prop("checked", settings.topRefreshOnLoad);
+
+    var refreshOnLoad = $('<label/>Refresh on load</label>').prepend(refreshOnLoadBtn);
 
     var TopObj = $('<div id="Top"/>').append(langDt, button, refreshOnLoad, featured, ranked);
     $('#right').append(TopObj);
@@ -933,13 +942,23 @@ Following2: function () {
     /* drkchange23 */filterBox.append(languagesFilter, hideEnded, hideProducer)
     /* drkchange23 */var filtersToggle = $('<a class="button" style="float:right">Filters</a></br>').click(function(){filterBox.toggle()});
 
-    var refreshOnLoad = $('<label><input id="following2RefreshOnLoad" type="checkbox" checked="true"> Refresh on load</label>')
+    if (!settings.following2RefreshOnLoad)
+        setSet('following2RefreshOnLoad', false);
+    debugger;
+    var refreshOnLoadBtn = $('<input id="following2RefreshOnLoad" type="checkbox">').change(function () {
+        debugger;
+        setSet('following2RefreshOnLoad', this.checked);
+    });
+    refreshOnLoadBtn.prop("checked", settings.following2RefreshOnLoad);
+
+    var refreshOnLoad = $('<label> Refresh on load</label>').prepend(refreshOnLoadBtn);
 
     var Following2Obj = $('<div id="Following2"/>');
     Following2Obj.append(button, refreshOnLoad, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result)
 
     Following2Obj.on("show", function() {
-        if (!$("#topRefreshOnLoad")[0].checked)
+        debugger;
+        if (!settings.following2RefreshOnLoad)
             return;
 
         ScrollPositions["Following2"] = 0;
