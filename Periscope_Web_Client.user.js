@@ -437,8 +437,17 @@ function switchSection(section, param, popstate) {
     var sectionContainer = $('#' + section);
     if (!sectionContainer.length)
         Inits[section]();
-    else
+    else {
+        var refreshSettingKey = "refresh" + section + "OnLoad";
+        if (settings[refreshSettingKey]) {
+            var refreshBtn = $('#refresh' + section);
+            if (refreshBtn.length > 0) {
+                ScrollPositions[section] = 0;
+                refreshBtn.click();
+            }
+        }
         sectionContainer.show();
+    }
     if (param)
         switch (section) {
             case 'User':
@@ -767,31 +776,23 @@ Top: function () {
     var ranked = $('<div/>');
     var langDt = $(languageSelect);
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
-    var button = $('<a class="button">Refresh</a>').click(function () {
+    var button = $('<a class="button" id="refreshTop">Refresh</a>').click(function () {
         Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
         Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
 
-    if (!settings.topRefreshOnLoad)
-        setSet('topRefreshOnLoad', false);
+    if (!settings.refreshTopOnLoad)
+        setSet('refreshTopOnLoad', false);
 
-    var refreshOnLoadBtn = $('<input id="topRefreshOnLoad" type="checkbox">').change(function () {
-        setSet('topRefreshOnLoad', this.checked);
+    var refreshOnLoadBtn = $('<input id="refreshTopOnLoad" type="checkbox">').change(function () {
+        setSet('refreshTopOnLoad', this.checked);
     });
-    refreshOnLoadBtn.prop("checked", settings.topRefreshOnLoad);
+    refreshOnLoadBtn.prop("checked", settings.refreshTopOnLoad);
 
     var refreshOnLoad = $('<label/>Refresh on load</label>').prepend(refreshOnLoadBtn);
 
     var TopObj = $('<div id="Top"/>').append(langDt, button, refreshOnLoad, featured, ranked);
     $('#right').append(TopObj);
-
-    TopObj.on("show", function() {
-        if (!$("#topRefreshOnLoad")[0].checked)
-            return;
-
-        ScrollPositions["Top"] = 0;
-        button.click();
-    });
 
     button.click();
 },
@@ -886,7 +887,7 @@ Following: function () {
 /* drkchange18 */
 Following2: function () {
     var result = $('<div/>');
-    var button = $('<a class="button">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList2(result /* drkchange00 */ , null, 'following2')));
+    var button = $('<a class="button" id="refreshFollowing2">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList2(result /* drkchange00 */ , null, 'following2')));
 
     /* drkchange23 */var hideEnded = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideEnded ? 'checked' : '') + '/> Hide non-live</label>').click(function (e) {
         $('#Following2').find('.card').not('.RUNNING').not('.newHighlight');//cardsToHide
@@ -942,28 +943,18 @@ Following2: function () {
     /* drkchange23 */filterBox.append(languagesFilter, hideEnded, hideProducer)
     /* drkchange23 */var filtersToggle = $('<a class="button" style="float:right">Filters</a></br>').click(function(){filterBox.toggle()});
 
-    if (!settings.following2RefreshOnLoad)
-        setSet('following2RefreshOnLoad', false);
-    debugger;
-    var refreshOnLoadBtn = $('<input id="following2RefreshOnLoad" type="checkbox">').change(function () {
+    if (!settings.refreshFollowing2OnLoad)
+        setSet('refreshFollowing2OnLoad', false);
+    var refreshOnLoadBtn = $('<input id="refreshFollowing2OnLoad" type="checkbox">').change(function () {
         debugger;
-        setSet('following2RefreshOnLoad', this.checked);
+        setSet('refreshFollowing2OnLoad', this.checked);
     });
-    refreshOnLoadBtn.prop("checked", settings.following2RefreshOnLoad);
+    refreshOnLoadBtn.prop("checked", settings.refreshFollowing2OnLoad);
 
     var refreshOnLoad = $('<label> Refresh on load</label>').prepend(refreshOnLoadBtn);
 
     var Following2Obj = $('<div id="Following2"/>');
     Following2Obj.append(button, refreshOnLoad, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result)
-
-    Following2Obj.on("show", function() {
-        debugger;
-        if (!settings.following2RefreshOnLoad)
-            return;
-
-        ScrollPositions["Following2"] = 0;
-        button.click();
-    });
 
     $('#right').append(Following2Obj);
     button.click();
