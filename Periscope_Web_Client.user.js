@@ -946,7 +946,6 @@ Following2: function () {
     if (!settings.refreshFollowing2OnLoad)
         setSet('refreshFollowing2OnLoad', false);
     var refreshOnLoadBtn = $('<input id="refreshFollowing2OnLoad" type="checkbox">').change(function () {
-        debugger;
         setSet('refreshFollowing2OnLoad', this.checked);
     });
     refreshOnLoadBtn.prop("checked", settings.refreshFollowing2OnLoad);
