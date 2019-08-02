@@ -4629,8 +4629,6 @@ function showHide( elements, show ) {
 			continue;
 		}
 
-		var events = jQuery._data(elem, "events");
-		var eventName = ""
 		display = elem.style.display;
 		if ( show ) {
 
@@ -4646,27 +4644,12 @@ function showHide( elements, show ) {
 			if ( elem.style.display === "" && isHiddenWithinTree( elem ) ) {
 				values[ index ] = getDefaultDisplay( elem );
 			}
-
-			eventName = "show";
 		} else {
 			if ( display !== "none" ) {
 				values[ index ] = "none";
 
 				// Remember what we're overwriting
 				dataPriv.set( elem, "display", display );
-			}
-
-			eventName = "hide";
-		}
-
-		// trigger event
-		if (events !== undefined && events[eventName] !== undefined)
-		{
-			var theseEvents = events[eventName];
-			var handlerLength = theseEvents.length;
-			for(var handlerIndex = 0 ; handlerIndex < handlerLength ; ++handlerIndex) 
-			{
-				theseEvents[handlerIndex].handler();
 			}
 		}
 	}
