@@ -1014,47 +1014,13 @@ Chat: function () {
 
     function userlistAdd(user){
         var id = user.id || user.remoteID || user.user_id;
-        if (!userlist.find('#'+id).length && (user.display_name || user.displayName))
-            userlist.append($('<div class="user" id="' + id + '">' + emoji.replace_unified(user.display_name || user.displayName) + ' </div>')
+        if (!userlist.find('#'+id).length && (user.display_name || user.displayName)) {
+            userCard = $('<div class="user" id="' + id + '">' + emoji.replace_unified(user.display_name || user.displayName) + ' </div>')
                 .append($('<div class="username">(' + user.username + ')</div>')
-                    .click(switchSection.bind(null, 'User', id)))
-                .contextmenu(function (ev) {
-                    ev.preventDefault();
-                    var contextmenu = $('<div class="contextmenu" style="top: ' + ev.pageY + 'px; left: ' + ev.pageX + 'px;"/>')
-                        .append($('<div>Follow</div>').click(function () {
-                            Api('follow', {
-                                user_id: id
-                            });
-                        }))
-                        .append($('<div>Unfollow</div>').click(function () {
-                            Api('unfollow', {
-                                user_id: id
-                            });
-                        }))
-                        .append('<div data-clipboard-text="https://periscope.tv/' + user.username + '">Copy profile URL</div>' +
-                                '<div data-clipboard-text="' + id + '">Copy user ID</div>')
-                        .append($('<div>Block user</div>').click(function () {
-                            Api('block/add', {
-                                to: id
-                            });
-                        }))
-                        .append($('<div>Unlock user</div>').click(function () {
-                            Api('block/remove', {
-                                to: id
-                            });
-                        }))
-                        .click(function (event) {
-                            $(this).remove();
-                        })
-                        .mousedown(function (event) {
-                            event.stopPropagation();
-                        });
-                    $(document.body).append(contextmenu).off('mousedown').mousedown(function () {
-                        contextmenu.remove();
-                    });
-                    new ClipboardJS('.contextmenu div');
-                })
-            );
+                .click(switchSection.bind(null, 'User', id)));
+            addUserContextMenu(userCard, id, user.username);
+            userlist.append(userCard);
+        }
     }
     function userlistRemove(user){
         var id = user.id || user.remoteID || user.user_id;
@@ -1851,6 +1817,46 @@ function zeros(number) {
         }
     }
 };
+
+function addUserContextMenu(node, id, username) {
+    node.contextmenu(function (ev) {
+        ev.preventDefault();
+        var contextmenu = $('<div class="contextmenu" style="top: ' + ev.pageY + 'px; left: ' + ev.pageX + 'px;"/>')
+            .append($('<div>Follow</div>').click(function () {
+                Api('follow', {
+                    user_id: id
+                });
+            }))
+            .append($('<div>Unfollow</div>').click(function () {
+                Api('unfollow', {
+                    user_id: id
+                });
+            }))
+            .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
+                    '<div data-clipboard-text="' + id + '">Copy user ID</div>')
+            .append($('<div>Block user</div>').click(function () {
+                Api('block/add', {
+                    to: id
+                });
+            }))
+            .append($('<div>Unlock user</div>').click(function () {
+                Api('block/remove', {
+                    to: id
+                });
+            }))
+            .click(function (event) {
+                $(this).remove();
+            })
+            .mousedown(function (event) {
+                event.stopPropagation();
+            });
+        $(document.body).append(contextmenu).off('mousedown').mousedown(function () {
+            contextmenu.remove();
+        });
+        new ClipboardJS('.contextmenu div');
+    })
+};
+
 function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use it as callback arg
     return function (response) {
         jcontainer.html(title || '<div style="clear:both"/>');
@@ -1868,6 +1874,8 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
             for (var i in response) {
                 /* drkchange00 */ var newHighlight = mutualIDs(response, oldBroadcastsList).indexOf(response[i].id) < 0 && refreshFrom === 'following' && oldBroadcastsList.length !== 0 ? 'newHighlight' : '';/*drkchange00 end*/
                 var stream = $('<div class="card ' + response[i].state + ' ' + response[i].id + /* drkchange00 */ ' ' + newHighlight + /* drkchange00 */ '"/>').append(getDescription(response[i]));
+                addUserContextMenu(stream, response[i].user_id, response[i].username);
+                
                 var link = $('<a>Get stream link</a>');
                 link.click(getM3U.bind(null, response[i].id, stream));
                 jcontainer.append(stream.append(link));
@@ -1984,6 +1992,7 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
 /* drkchange00 */var newHighlight = (broadcastsCache.oldBroadcastsList.indexOf(broadcastsCache.idsQueue[j]) < 0 && refreshFrom === 'following2' && broadcastsCache.oldBroadcastsList.length !== 0) ? ' newHighlight' : '';
                 var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + (deleted ? ' deletedBroadcast' : '') 
                             + (private ? ' private' : '') + (producer? ' producer ' : '') +/* drkchange19 */'" nr="' + j + '"' + ' lang="' + resp.language + '"/>').append(getDescription(resp));
+                addUserContextMenu(stream, resp.user_id, resp.username);
                 var link = $('<a> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 /* drkchange29 */var downloadWhole = $('<a class="downloadWhole"> Download </a>');
