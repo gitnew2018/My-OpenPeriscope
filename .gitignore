@@ -1,0 +1,11 @@
+/userdata
+/presets
+/node_modules
+/.idea
+/LICENSE.txt
+/README.txt
+/bin
+/doc
+/package-lock.json
+/.project
+/.vscode
