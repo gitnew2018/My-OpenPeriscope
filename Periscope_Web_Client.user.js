@@ -1478,7 +1478,7 @@ User: function () {
                 user_id: id,
                 all: true
             }, function (broadcasts) {
-                refreshList($('#userBroadcasts'))(broadcasts);
+                refreshList($('#userBroadcasts'), null, "userBroadcasts")(broadcasts);
                 BroadcastsSpoiler.append(' (' + broadcasts.length + ')').click();
             }); /* drkchange26 */
         },function(response){resultUser.prepend(response)});
@@ -1908,7 +1908,8 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
             for (var i in response) {
                 /* drkchange00 */ var newHighlight = mutualIDs(response, oldBroadcastsList).indexOf(response[i].id) < 0 && refreshFrom === 'following' && oldBroadcastsList.length !== 0 ? 'newHighlight' : '';/*drkchange00 end*/
                 var stream = $('<div class="card ' + response[i].state + ' ' + response[i].id + /* drkchange00 */ ' ' + newHighlight + /* drkchange00 */ '"/>').append(getDescription(response[i]));
-                addUserContextMenu(stream, response[i].user_id, response[i].username);
+                if (refreshFrom != "userBroadcasts")
+                    addUserContextMenu(stream, response[i].user_id, response[i].username);
                 
                 var link = $('<a>Get stream link</a>');
                 link.click(getM3U.bind(null, response[i].id, stream));
