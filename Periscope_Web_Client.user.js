@@ -2525,8 +2525,8 @@ function getFlag(country) {
     return (output === both) ? country : output;
 };
 function loadScreenPreviewer(stream, thumbs) {
-    /* drkchange01 */
-    var win = window.open("", "screenPreviewer", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
+        /* drkchange01 */
+    var win = window.open("", "screenPreviewer" + stream.id, "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
     var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
     var html = '<style type="text/css">.hideImages{display: none;}#screenPreviewer{height: 90%; position: absolute;left: 50% ;transform: translateX(-50%); -webkit-transform: translateX(-50%); border: 1px solid gray} body{background: #2A2A2A} a{color: white; display: block}</style>'
         +'<a href="#" id="button">Switch to screenlist</a><div id="screenPreviewer"></div>';
