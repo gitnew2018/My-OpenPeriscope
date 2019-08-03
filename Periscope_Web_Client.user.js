@@ -2524,6 +2524,48 @@ function getFlag(country) {
     var output = emoji.replace_unified(both);
     return (output === both) ? country : output;
 };
+function loadScreenPreviewer(stream, thumbs) {
+    /* drkchange01 */
+    var win = window.open("", "screenPreviewer", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
+    var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
+    var html = '<style type="text/css">.hideImages{display: none;}#screenPreviewer{height: 90%; position: absolute;left: 50% ;transform: translateX(-50%); -webkit-transform: translateX(-50%); border: 1px solid gray} body{background: #2A2A2A} a{color: white; display: block}</style>'
+        +'<a href="#" id="button">Switch to screenlist</a><div id="screenPreviewer"></div>';
+    for (var i in thumbs.chunks) {
+        html+='<img src="' + thumbs.chunks[i].tn + '"/>';
+    }
+    html+='<script>\
+    setTimeout(function () {\
+        var images = document.querySelectorAll("img");\
+        var widowWidth = (0.9 * window.innerWidth) || 720;\
+        var bg = document.getElementById("screenPreviewer");\
+        var lastI = 0;\
+        var button = document.getElementById("button");\
+        button.onclick = function () {\
+            bg.style.width = widowWidth;\
+            bg.style.display == "block" ? bg.style.display = "none" : bg.style.display = "block";\
+            for (var j = 0, len = images.length; j < len; j++)\
+            images[j].className == "hideImages" ? (images[j].className = "") : (images[j].className = "hideImages");\
+            var i = 0;\
+            bg.onmousemove = function (event) {\
+                i = Math.floor(event.offsetX / (widowWidth / len));\
+                if (i >= len) i = len;\
+                if (i < 1) i = 0;\
+                if (i != lastI) {\
+                    if (images[i].complete)\
+                    bg.style.background = "url(" + images[i].src + ") no-repeat center /contain";\
+                    lastI = i;\
+                }\
+            }\
+        }\
+    }, 100);\
+    setTimeout(function () {\
+        button.click();\
+    }, 200);\
+    </script>';
+    win.document.body.innerHTML = '';
+    win.document.write(title,html);
+
+}
 function getDescription(stream) {
     var title = emoji.replace_unified(stream.status || 'Untitled');
     var featured_reason = '';
@@ -2551,45 +2593,7 @@ function getDescription(stream) {
         Api('replayThumbnailPlaylist', {
             broadcast_id: stream.id
         }, function (thumbs) {
-            /* drkchange01 */
-            var win = window.open("", "screenPreviewer", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
-            var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
-            var html = '<style type="text/css">.hideImages{display: none;}#screenPreviewer{height: 90%; position: absolute;left: 50% ;transform: translateX(-50%); -webkit-transform: translateX(-50%); border: 1px solid gray} body{background: #2A2A2A} a{color: white; display: block}</style>'
-             +'<a href="#" id="button">Switch to screenlist</a><div id="screenPreviewer"></div>';
-            for (var i in thumbs.chunks) {
-                html+='<img src="' + thumbs.chunks[i].tn + '"/>';
-            }
-            html+='<script>\
-            setTimeout(function () {\
-                var images = document.querySelectorAll("img");\
-                var widowWidth = (0.9 * window.innerWidth) || 720;\
-                var bg = document.getElementById("screenPreviewer");\
-                var lastI = 0;\
-                var button = document.getElementById("button");\
-                button.onclick = function () {\
-                    bg.style.width = widowWidth;\
-                    bg.style.display == "block" ? bg.style.display = "none" : bg.style.display = "block";\
-                    for (var j = 0, len = images.length; j < len; j++)\
-                    images[j].className == "hideImages" ? (images[j].className = "") : (images[j].className = "hideImages");\
-                    var i = 0;\
-                    bg.onmousemove = function (event) {\
-                        i = Math.floor(event.offsetX / (widowWidth / len));\
-                        if (i >= len) i = len;\
-                        if (i < 1) i = 0;\
-                        if (i != lastI) {\
-                            if (images[i].complete)\
-                            bg.style.background = "url(" + images[i].src + ") no-repeat center /contain";\
-                            lastI = i;\
-                        }\
-                    }\
-                }\
-            }, 100);\
-            setTimeout(function () {\
-                button.click();\
-            }, 200);\
-            </script>';
-            win.document.body.innerHTML = '';
-            win.document.write(title,html);
+            loadScreenPreviewer(stream, thumbs);
         });
     });
     /* drkchange01 */var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
