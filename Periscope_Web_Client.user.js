@@ -1687,6 +1687,9 @@ Edit: function () {
         /* drkchange03 */ var download_Selected = $('<label><input type="checkbox" style="margin-left: 1.5em;"' + (settings.selectedDownload ? 'checked' : '') + '/> Selected users broadcasts</label>').click(function (e) {
             setSet('selectedDownload', e.target.checked);
         });
+        var open_preview_in_separate_windows = $('<label><input type="checkbox" style="margin-left: 1.5em;"' + (settings.previewSeparateWindows ? 'checked' : '') + '/> Open previews in separate windows</label>').click(function (e) {
+            setSet('previewSeparateWindows', e.target.checked);
+        });
         var current_download_path = $('<dt style="margin-right: 10px;">' + settings.downloadPath + '</dt>');
         var download_path = $('<dt/>').append($('<input type="file" webkitdirectory directory/>').change(function () {
             setSet('downloadPath', $(this).val());
@@ -1735,7 +1738,8 @@ Edit: function () {
         download_private, '<br>',
         download_following, '<br>',
         download_shared, '<br>',
-        /* drkchange03 */ download_Selected, '<br><br>',
+        /* drkchange03 */ download_Selected, '<br>',
+        open_preview_in_separate_windows, '<br><br>',
         'Notifications refresh interval: ', notifications_interval ,' seconds','<br/><br/>',
         (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br/><br/>'] : ''),
         /* drkchange11 */log_broadcasts_to_file,
@@ -2526,7 +2530,7 @@ function getFlag(country) {
 };
 function loadScreenPreviewer(stream, thumbs) {
         /* drkchange01 */
-    var win = window.open("", "screenPreviewer" + stream.id, "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
+    var win = window.open("", "screenPreviewer" + (settings.previewSeparateWindows?stream.id:''), "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
     var title = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
     var html = '<style type="text/css">.hideImages{display: none;}#screenPreviewer{height: 90%; position: absolute;left: 50% ;transform: translateX(-50%); -webkit-transform: translateX(-50%); border: 1px solid gray} body{background: #2A2A2A} a{color: white; display: block}</style>'
         +'<a href="#" id="button">Switch to screenlist</a><div id="screenPreviewer"></div>';
