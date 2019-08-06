@@ -1,6 +1,27 @@
 <img align="right" src="https://raw.githubusercontent.com/Pmmlabs/OpenPeriscope/master/images/openperiscope.png">
-# OpenPeriscope
+# My-OpenPeriscope
 Unofficial in-browser client for Periscope (userscript)
+
+
+### Using as standalone application
+
+You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or build it by yourself from source [guide link](https://github.com/gitnew2018/My-OpenPeriscope/wiki).
+
+### Using as userscript
+
+1. Install [userscript manager](https://greasyfork.org/help/installing-user-scripts)
+1. Click to [link](https://raw.githubusercontent.com/gitnew2018/My-OpenPeriscope/master/Periscope_Web_Client.user.js) and then "Install"
+1. Navigate to http://example.net
+
+In this case posting to chat will not work.
+
+In userscript version, "Download" link is absent, so you can use downloaderNode (or other program) to download broadcasts:
+
+[My standalone periscope nodejs downloader](https://github.com/gitnew2018/nodejs_peri_downloader)
+
+### Screenshot
+
+![screenshot](https://user-images.githubusercontent.com/37026885/37880128-0360d5be-3084-11e8-8f32-77ae48a4896a.png)
 
 ### Features added in my version
 
@@ -44,28 +65,8 @@ Unofficial in-browser client for Periscope (userscript)
 * Option to refresh following section on load, Thanks to Max104t
 * Option to open multiple preview windows, Thanks to Max104t
 
-### Using as standalone application
-
-You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or build it by yourself from source [guide link](https://github.com/gitnew2018/My-OpenPeriscope/wiki).
-
-### Using as userscript
-
-1. Install [userscript manager](https://greasyfork.org/help/installing-user-scripts)
-1. Click to [link](https://raw.githubusercontent.com/gitnew2018/My-OpenPeriscope/master/Periscope_Web_Client.user.js) and then "Install"
-1. Navigate to http://example.net
-
-In this case posting to chat will not work.
-
-In userscript version, "Download" link is absent, so you can use downloaderNode (or other program) to download broadcasts:
-
-[My standalone periscope nodejs downloader](https://github.com/gitnew2018/nodejs_peri_downloader)
-
-### Screenshot
-
-![screenshot](https://user-images.githubusercontent.com/37026885/37880128-0360d5be-3084-11e8-8f32-77ae48a4896a.png)
-
 ### Donate to original autor
-Buy me a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
+Buy pmmlabs a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
 Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
 
 More info in original repository https://github.com/Pmmlabs/OpenPeriscope
