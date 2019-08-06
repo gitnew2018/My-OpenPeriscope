@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.10
+// @version     0.1.11
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -186,8 +186,7 @@ function Ready(loginInfo) {
         {text: 'API test', id: 'ApiTest'},
         {text: 'Map', id: 'Map'},
         {text: 'Top', id: 'Top'},
-        {text: 'Following', id: 'Following'},
-        /* drkchange18 */{text: 'Following2', id: 'Following2'},
+        /* drkchange18 */{text: 'Following', id: 'Following'},
         {text: 'Search broadcasts', id: 'Search'},
         {text: 'New broadcast', id: 'Create'},
         {text: 'Chat', id: 'Chat'},
@@ -324,7 +323,7 @@ var Notifications = {
                                 var date_start = new Date(new_list[i].start);
 
                                 fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' + '-LIVE- ' + (new_list[i].is_locked ? 'PRIVATE ' : '') + 'start@'
-                                + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + new_list[i].user_display_name + '** (@' + new_list[i].username + ') **' + (new_list[i].status || 'Untitled') + '** ' 
+                                + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + new_list[i].user_display_name + '** (@' + new_list[i].username + ')(**ID:** ' + new_list[i].id + ') **' + (new_list[i].status || 'Untitled') + ',** ' 
                                 + (new_list[i].share_display_names ? ['*shared by:* ' + new_list[i].share_display_names[0]] : '') + (new_list[i].channel_name ? [' *on:* ' + new_list[i].channel_name] : '') + '\n'),
                                 'utf8',function () {}); //log broadcasts to .txt
                             }
@@ -335,11 +334,12 @@ var Notifications = {
                                     if(NODEJS && settings.logToFile && !_partial_replay && /* drkchange22 */!repeatInteresting){
                                         const fs = require('fs');
                                         var date_start = new Date(_broadcast_info.start);
+                                        var savedLinks = broadcastsWithLinks[_broadcast_info.id];
 
                                         fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' +  'REPLAY ' + (_broadcast_info.is_locked ? 'PRIVATE ' : '') + 'start@'
-                                        + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + _broadcast_info.user_display_name + '** (@' + _broadcast_info.username + ') **' + (_broadcast_info.status || 'Untitled') + '** ' 
-                                        + (_broadcast_info.share_display_names ? ['*shared by:* ' + _broadcast_info.share_display_names[0]] : '') + (_broadcast_info.channel_name ? [' *on:* ' + _broadcast_info.channel_name] : '') + '\n' + (replay ? (replay + '\n') : '')),
-                                        'utf8',function () {}); //log replays to .txt
+                                        + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + _broadcast_info.user_display_name + '** (@' + _broadcast_info.username + ')(**ID:** ' + _broadcast_info.id + ') **' + (_broadcast_info.status || 'Untitled') + ',** ' 
+                                        +  ((savedLinks && savedLinks.hasOwnProperty('decryptKey'))? ('**KEY:** ' + savedLinks.decryptKey) : '') + '</br>' +'\n' + (replay ? (replay + '\n') : '')),
+                                        'utf8',function () {}); //log replays to .txt 
                                     }
                                     ////////// /* drkchange11 */ end
                                     ////////// /* drkchange21 */
@@ -878,24 +878,18 @@ Search: function () {
         '<h3>Channels</h3>', langDt, '<br><br>', channels, searchResults));
     RefreshChannels();
 },
+/* drkchange18 */
 Following: function () {
     var result = $('<div/>');
-    var button = $('<a class="button">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList(result /* drkchange00 */ , null, 'following')));
-    $('#right').append($('<div id="Following"/>').append(button, result));
-    button.click();
-},
-/* drkchange18 */
-Following2: function () {
-    var result = $('<div/>');
-    var button = $('<a class="button" id="refreshFollowing2">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList2(result /* drkchange00 */ , null, 'following2')));
+    var button = $('<a class="button" id="refreshFollowing">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList(result /* drkchange00 */ , null, 'following')));
 
     /* drkchange23 */var hideEnded = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideEnded ? 'checked' : '') + '/> Hide non-live</label>').click(function (e) {
-        $('#Following2').find('.card').not('.RUNNING').not('.newHighlight');//cardsToHide
+        $('#Following').find('.card').not('.RUNNING').not('.newHighlight');//cardsToHide
         broadcastsCache.filters.hideEnded = e.target.checked;
         applyFilters();
     });
     /* drkchange23 */var hideProducer = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideProducer ? 'checked' : '') + '/> Hide non-private producer</label>').click(function (e) {
-        $('#Following2').find('.producer').not('.newHighlight').not('.private');//cardsToHide
+        $('#Following').find('.producer').not('.newHighlight').not('.private');//cardsToHide
         broadcastsCache.filters.hideProducer = e.target.checked;
         applyFilters();
     });
@@ -928,7 +922,7 @@ Following2: function () {
         );
     }
     /* drkchange23 */function applyFilters(){
-        var cards = $('#Following2').find('.card').not('.newHighlight');
+        var cards = $('#Following').find('.card').not('.newHighlight');
         cards.each(function(index, card){
             card = $(card);
             var hide = false;
@@ -942,20 +936,31 @@ Following2: function () {
     /* drkchange23 */var filterBox = $('<div id="followingFilters"></div>').hide();
     /* drkchange23 */filterBox.append(languagesFilter, hideEnded, hideProducer)
     /* drkchange23 */var filtersToggle = $('<a class="button" style="float:right">Filters</a></br>').click(function(){filterBox.toggle()});
-
-    if (!settings.refreshFollowing2OnLoad)
-        setSet('refreshFollowing2OnLoad', false);
-    var refreshOnLoadBtn = $('<input id="refreshFollowing2OnLoad" type="checkbox">').change(function () {
-        setSet('refreshFollowing2OnLoad', this.checked);
+    /* drkchange30 */
+    if (!settings.classic_cards_order)
+        setSet('classic_cards_order', false);
+    var classicOrderBtn = $('<input id="classicOrder" type="checkbox">').change(function () {
+        setSet('classic_cards_order', this.checked);
     });
-    refreshOnLoadBtn.prop("checked", settings.refreshFollowing2OnLoad);
+    classicOrderBtn.prop("checked", settings.classic_cards_order);
+
+    var classic_order = $('<label> Classic Order</label>').prepend(classicOrderBtn);
+    /* drkchange30 *///end
+
+    if (!settings.refreshFollowingOnLoad)
+        setSet('refreshFollowingOnLoad', false);
+    var refreshOnLoadBtn = $('<input id="refreshFollowingOnLoad" type="checkbox">').change(function () {
+        setSet('refreshFollowingOnLoad', this.checked);
+    });
+    refreshOnLoadBtn.prop("checked", settings.refreshFollowingOnLoad);
 
     var refreshOnLoad = $('<label> Refresh on load</label>').prepend(refreshOnLoadBtn);
+    var optionsContainer = $('<span id="optionsContainer"></span>').append(refreshOnLoad, '</br>', /* drkchange30 */classic_order)
 
-    var Following2Obj = $('<div id="Following2"/>');
-    Following2Obj.append(button, refreshOnLoad, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result)
+    var FollowingObj = $('<div id="Following"/>');
+    FollowingObj.append(button, optionsContainer, /* drkchange23 */filtersToggle, /* drkchange23 */filterBox, result);
 
-    $('#right').append(Following2Obj);
+    $('#right').append(FollowingObj);
     button.click();
 },
 Create: function () {
@@ -1687,9 +1692,6 @@ Edit: function () {
         /* drkchange03 */ var download_Selected = $('<label><input type="checkbox" style="margin-left: 1.5em;"' + (settings.selectedDownload ? 'checked' : '') + '/> Selected users broadcasts</label>').click(function (e) {
             setSet('selectedDownload', e.target.checked);
         });
-        var open_preview_in_separate_windows = $('<label><input type="checkbox" style="margin-left: 1.5em;"' + (settings.previewSeparateWindows ? 'checked' : '') + '/> Open previews in separate windows</label>').click(function (e) {
-            setSet('previewSeparateWindows', e.target.checked);
-        });
         var current_download_path = $('<dt style="margin-right: 10px;">' + settings.downloadPath + '</dt>');
         var download_path = $('<dt/>').append($('<input type="file" webkitdirectory directory/>').change(function () {
             setSet('downloadPath', $(this).val());
@@ -1724,6 +1726,9 @@ Edit: function () {
     /* drkchange25 */var update_thumbnails = $('<label><input type="checkbox" ' + (settings.updateThumbnails ? 'checked' : '') + '/> Auto update thumbnails</label>').click(function (e) {
         setSet('updateThumbnails', e.target.checked);
     });
+    var open_preview_in_separate_windows = $('<label><input type="checkbox" ' + (settings.previewSeparateWindows ? 'checked' : '') + '/> Open previews in separate windows</label>').click(function (e) {
+        setSet('previewSeparateWindows', e.target.checked);
+    });
 
     $('#right').append($('<div id="Edit"/>').append(
         '<h3>Profile edit</h3>',
@@ -1738,17 +1743,17 @@ Edit: function () {
         download_private, '<br>',
         download_following, '<br>',
         download_shared, '<br>',
-        /* drkchange03 */ download_Selected, '<br>',
-        open_preview_in_separate_windows, '<br><br>',
+        /* drkchange03 */ download_Selected, '<br><br>',
         'Notifications refresh interval: ', notifications_interval ,' seconds','<br/><br/>',
         (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br/><br/>'] : ''),
-        /* drkchange11 */log_broadcasts_to_file,
+        /* drkchange11 */'<br>', log_broadcasts_to_file,
         /* drkchange25 */'<br>', update_thumbnails,
+        '<br>', open_preview_in_separate_windows,
         /* drkchange15 */'<br>', show_m3u_links,
         /* drkchange14 */'<br>', show_partial_links,
         /* drkchange16 */'<br>', show_nodeDown_links,
         /* drkchange16 */'<br>', show_nodeDown_linksPrv,
-        /* drkchange change order*/'<br/><hr color="#E0E0E0" size="1">' +
+        /* drkchange change options order*/'<br/><hr color="#E0E0E0" size="1">' +
         '<h3>Periscope settings</h3>',
         settingsContainer, buttonSettings
     ));
@@ -1833,18 +1838,6 @@ function zeros(number) {
     return (100 + number + '').substr(1);
 }
 
-/* drkchange00 */ function mutualIDs(listNew, listOld){//returns Array of IDs that both lists contain.
-    var matches=[];
-    for (var j = 0, len=listNew.length; j < len; j++) {
-        for (var k = 0, leng=listOld.length; k < leng; k++) {
-            if (listNew[j].id === listOld[k].id){
-                matches.push(listNew[j].id);
-            }
-        }
-    }
-    return matches;
-}
-/* drkchange00 */ oldBroadcastsList = [];
 /* drkchange07 */ broadcastsWithLinks = {
     idsQueue:[],
     addToBroadcastsLinks(id,params){
@@ -1895,80 +1888,6 @@ function addUserContextMenu(node, id, username) {
     })
 };
 
-function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use it as callback arg
-    return function (response) {
-        jcontainer.html(title || '<div style="clear:both"/>');
-        if (response.length) {
-            jcontainer.prepend($('<a class="watching right icon">Sort by watching</a>').click(function () {  // sort cards in given jquery-container
-                var cards = jcontainer.find('.card');
-                var sorted = cards.sort(function (a, b) {
-                    return $(b).find('.watching').text() - $(a).find('.watching').text();
-                });
-                jcontainer.append(sorted);
-                $(window).trigger('scroll');    // for lazy load
-            }));
-
-            var ids = [];
-            for (var i in response) {
-                /* drkchange00 */ var newHighlight = mutualIDs(response, oldBroadcastsList).indexOf(response[i].id) < 0 && refreshFrom === 'following' && oldBroadcastsList.length !== 0 ? 'newHighlight' : '';/*drkchange00 end*/
-                var stream = $('<div class="card ' + response[i].state + ' ' + response[i].id + /* drkchange00 */ ' ' + newHighlight + /* drkchange00 */ '"/>').append(getDescription(response[i]));
-                if (refreshFrom != "userBroadcasts")
-                    addUserContextMenu(stream, response[i].user_id, response[i].username);
-                
-                var link = $('<a>Get stream link</a>');
-                link.click(getM3U.bind(null, response[i].id, stream));
-                jcontainer.append(stream.append(link));
-                ids.push(response[i].id);
-                /* drkchange07 */ if (broadcastsWithLinks.hasOwnProperty(response[i].id) ){
-                    var rep = broadcastsWithLinks[response[i].id].RclipboardLink;
-                    var liv = broadcastsWithLinks[response[i].id].clipboardLink;
-                    var repM3U = broadcastsWithLinks[response[i].id].Rm3uLink;
-
-                    if(liv){
-                        var clipboardLink = broadcastsWithLinks[response[i].id].clipboardLink.clone(); //clones prevent links from disappearing.
-                        new ClipboardJS(clipboardLink.get(0));
-                        var clipboardDowLink = broadcastsWithLinks[response[i].id].clipboardDowLink.clone();
-                        new ClipboardJS(clipboardDowLink.get(0));
-
-                        stream.find('.responseLinks').append(
-           /* drkchange15 */(settings.showM3Ulinks && broadcastsWithLinks[response[i].id].m3uLink) ? [broadcastsWithLinks[response[i].id].m3uLink.clone(true,true), ' | ' ]: '',
-                            (NODEJS ? broadcastsWithLinks[response[i].id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''), clipboardLink,
-          /* drkchange09 */ (!NODEJS && (/* drkchange16 */settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked))) ? [' | ', clipboardDowLink] : '', '<br/>'
-                        );
-                    }
-                    if (rep){
-                        var RclipboardLink = broadcastsWithLinks[response[i].id].RclipboardLink.clone();
-                        new ClipboardJS(RclipboardLink.get(0));
-                        var RclipboardDowLink = broadcastsWithLinks[response[i].id].RclipboardDowLink.clone();
-                        new ClipboardJS(RclipboardDowLink.get(0));
-
-                        stream.find('.responseLinksReplay').append(
-           /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U.clone(true,true), ' | '] : '',
-           /* drkchange14 */(settings.showPRlinks && NODEJS ? [broadcastsWithLinks[response[i].id].RdownloadLink.clone(true,true), ' | '] : ''),
-           /* drkchange14 */(rep && settings.showPRlinks) ? RclipboardLink : '',
-                            (!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked)) && settings.showPRlinks) ?/* drkchange09 */  (' | ', RclipboardDowLink) : '', '<br/>'
-                        );
-                    }
-                }
-            }
-            if (typeof response[0].n_watching == 'undefined')
-                Api('getBroadcasts', {
-                    broadcast_ids: ids,
-                    only_public_publish: true
-                }, function (info) {
-                    for (var i in info)
-                        $('.card.' + info[i].id + ' .watching').text(info[i].n_watching);
-                });
-        } else
-            jcontainer.append('No results');
-        // if jcontainer isn't visible, scroll to it
-        var top = jcontainer.offset().top;
-        if ($(window).scrollTop() + $(window).height() - 100 < top) {
-            $(window).scrollTop(top);
-        }
-        /*drkchange00*/ refreshFrom === 'following' ? oldBroadcastsList = response : '';
-    };
-}
 /* drkchange18 */broadcastsCache = {
     idsQueue: [],
     /* drkchange00 */oldBroadcastsList: [],
@@ -2007,96 +1926,158 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
     }
 }
 /* drkchange18 */
-function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use it as callback arg
+function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use it as callback arg
     return function (response) {
         jcontainer.html(title || '<div style="clear:both"/>');
         if (response.length) {
-            var existingBroadcasts = [];
-            /* drkchange20 */var interestingToggle = false;
-            /* drkchange20 */var interestingState = [];
-            for(var o in response){
-                existingBroadcasts.push(response[o].id);
-            }
-            for (var i = response.length - 1; i >= 0; i--) {
-                broadcastsCache[response[i].id] = $.extend({}, response[i]);
-                limitAddIDs(broadcastsCache, response[i].id, 100, existingBroadcasts);
-            }
             var ids = [];
-            for (var j = broadcastsCache.idsQueue.length - 1; j >= 0; j--) {
-                var deleted = existingBroadcasts.indexOf(broadcastsCache.idsQueue[j]) < 0;
-                var resp = broadcastsCache[broadcastsCache.idsQueue[j]];
+
+            var createCard = function (index) {
+                var resp;
+                if (refreshFrom === 'following' && !settings.classic_cards_order){
+                    var deleted = existingBroadcasts.indexOf(broadcastsCache.idsQueue[index]) < 0;
+                    resp = broadcastsCache[broadcastsCache.idsQueue[index]];
+                } else {
+                    resp = response[index];
+                }
+
                 deleted ? resp.state = 'ENDED' : ''; //prevent some cached broadcasts from showing as running.
                 var private = resp.is_locked;
                 var producer = (resp.broadcast_source === 'producer' || resp.broadcast_source === 'livecms');
-/* drkchange00 */var newHighlight = (broadcastsCache.oldBroadcastsList.indexOf(broadcastsCache.idsQueue[j]) < 0 && refreshFrom === 'following2' && broadcastsCache.oldBroadcastsList.length !== 0) ? ' newHighlight' : '';
+/* drkchange00 */var newHighlight = (broadcastsCache.oldBroadcastsList.indexOf(resp.id) < 0 && refreshFrom === 'following' && broadcastsCache.oldBroadcastsList.length !== 0) ? ' newHighlight' : '';
                 var stream = $('<div class="card ' + resp.state + ' ' + resp.id +/* drkchange00 */newHighlight + (deleted ? ' deletedBroadcast' : '') 
-                            + (private ? ' private' : '') + (producer? ' producer ' : '') +/* drkchange19 */'" nr="' + j + '"' + ' lang="' + resp.language + '"/>').append(getDescription(resp));
-                addUserContextMenu(stream, resp.user_id, resp.username);
+                            + (private ? ' private' : '') + (producer? ' producer ' : '') +/* drkchange19 */'" nr="' + index + '"' + ' lang="' + resp.language + '"/>').append(getDescription(resp));
+                if (refreshFrom != "userBroadcasts")
+                    addUserContextMenu(stream, resp.user_id, resp.username);
+
                 var link = $('<a> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
-/* drkchange29 */var downloadWhole = $('<a class="downloadWhole"> Download </a>');
+
+/* drkchange29 */var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothM3Us.bind(null, resp.id, stream));;
 /* drkchange29 */var tempLiveLink = $('<input class="liveUrl" type="hidden">');
 /* drkchange29 */var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, tempLiveLink, ' | ');
-/* drkchange29 */downloadWhole.click(getBothM3Us.bind(null, resp.id, stream));
-/* drkchange22 */var repeat_getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
-                    if(e.target.checked) {
-                        broadcastsCache.autoGettinList.push(e.data.param1);
-                    }else{
-                        broadcastsCache.autoGettinList.splice(broadcastsCache.autoGettinList.indexOf(e.data.param1),1);
-                    }
-/* drkchange20 */   broadcastsCache.interestingList.indexOf(e.data.param1) < 0 ? broadcastsCache.interestingList.push(e.data.param1) : '';
-/* drkchange20 */   if(broadcastsCache.interestingList.length > 100)
-                        broadcastsCache.interestingList.shift();
+
+                if (refreshFrom === 'following' ){
+    /* drkchange22 */var repeat_getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
+                        if(e.target.checked) {
+                            broadcastsCache.autoGettinList.push(e.data.param1);
+                        }else{
+                            broadcastsCache.autoGettinList.splice(broadcastsCache.autoGettinList.indexOf(e.data.param1),1);
+                        }
+        /* drkchange20 */broadcastsCache.interestingList.indexOf(e.data.param1) < 0 ? broadcastsCache.interestingList.push(e.data.param1) : '';
+        /* drkchange20 */if(broadcastsCache.interestingList.length > 100)
+                            broadcastsCache.interestingList.shift();
                     })) : '';
-/* drkchange23 */broadcastsCache.filters.hideEnded && !newHighlight && (resp.state != 'RUNNING') ? stream.hide() : '';
-/* drkchange23 */broadcastsCache.filters.hideProducer && !newHighlight && producer ? stream.hide() : '';
-/* drkchange23 */broadcastsCache.filters.languagesToHide.indexOf(resp.language) >= 0 ? stream.hide() : '';
-                
-                ids.push(resp.id);
+
+    /* drkchange23 */broadcastsCache.filters.hideEnded && !newHighlight && (resp.state != 'RUNNING') ? stream.hide() : '';
+                }
+
+    /* drkchange23 */broadcastsCache.filters.hideProducer && !newHighlight && producer ? stream.hide() : '';
+    /* drkchange23 */broadcastsCache.filters.languagesToHide.indexOf(resp.language) >= 0 ? stream.hide() : '';
+
+                 ids.push(resp.id);
 /* drkchange29 */var replayLinkExists = false;
 /* drkchange07 */ if (broadcastsWithLinks.hasOwnProperty(resp.id) ){
-                    var brwlID = broadcastsWithLinks[resp.id];
-                    var rep = brwlID.RclipboardLink;
-                    var repM3U = brwlID.Rm3uLink;
-                    var liv = brwlID.clipboardLink;
-                    var showDowLink = !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks;
-   /* drkchange29 */rep ? replayLinkExists = brwlID.RdownloadLink.hasClass('linkReplay') : '';
+                        var brwlID = broadcastsWithLinks[resp.id];
+                        var rep = brwlID.RclipboardLink;
+                        var repM3U = brwlID.Rm3uLink;
+                        var liv = brwlID.clipboardLink;
+                        var showDowLink = !NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && private)) && settings.showPRlinks;
+       /* drkchange29 */rep ? replayLinkExists = brwlID.RdownloadLink.hasClass('linkReplay') : '';
 
-                    if(liv && !replayLinkExists){
-                        var clipboardLink = brwlID.clipboardLink.clone(); //clones prevent links from disappearing.
-                        new ClipboardJS(clipboardLink.get(0));
-                        var clipboardDowLink = brwlID.clipboardDowLink.clone();
-                        new ClipboardJS(clipboardDowLink.get(0));
+                        if(liv && !replayLinkExists){
+                            var clipboardLink = brwlID.clipboardLink;
+                            new ClipboardJS(clipboardLink.get(0));
+                            var clipboardDowLink = brwlID.clipboardDowLink;
+                            new ClipboardJS(clipboardDowLink.get(0));
 
-                        stream.find('.responseLinks').append(
-        /* drkchange15 */   (settings.showM3Ulinks && brwlID.m3uLink) ? [brwlID.m3uLink.clone(true,true), ' | '] : '',
-                            NODEJS ? [brwlID.downloadLink.clone(true,true), ' | '] : '',
-                            clipboardLink,
-        /* drkchange09 */   showDowLink ? [' | ', clipboardDowLink] : '', '<br/>'
-                        );
+                            stream.find('.responseLinks').append(
+            /* drkchange15 */   (settings.showM3Ulinks && brwlID.m3uLink) ? [brwlID.m3uLink, ' | '] : '',
+                                NODEJS ? [brwlID.downloadLink.clone(true,true), ' | '] : '',
+                                clipboardLink,
+            /* drkchange09 */   showDowLink ? [' | ', clipboardDowLink] : '', '<br/>'
+                            );
+                        }
+                        if(rep){
+                            var RclipboardLink = brwlID.RclipboardLink;
+                            new ClipboardJS(RclipboardLink.get(0));
+                            var RclipboardDowLink = brwlID.RclipboardDowLink;
+                            new ClipboardJS(RclipboardDowLink.get(0));
+
+                            stream.find('.responseLinksReplay').append(
+            /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U, ' | '] : '',
+            /* drkchange14 */(settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink, ' | '] : ''),
+            /* drkchange14 */ settings.showPRlinks ? RclipboardLink : '',
+            /* drkchange09 */ showDowLink ? [' | ', RclipboardDowLink] : '', '<br/>'
+                            );
+                        }
                     }
-                    if(rep){
-                        var RclipboardLink = brwlID.RclipboardLink.clone();
-                        new ClipboardJS(RclipboardLink.get(0));
-                        var RclipboardDowLink = brwlID.RclipboardDowLink.clone();
-                        new ClipboardJS(RclipboardDowLink.get(0));
-
-                        stream.find('.responseLinksReplay').append(
-           /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U.clone(true,true), ' | '] : '',
-           /* drkchange14 */(settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink.clone(true,true), ' | '] : ''),
-           /* drkchange14 */ settings.showPRlinks ? RclipboardLink : '',
-           /* drkchange09 */ showDowLink ? [' | ', RclipboardDowLink] : '', '<br/>'
-                        );
-                    }
+                    var addMethod = '';
+                    refreshFrom === 'following' && !settings.classic_cards_order ? addMethod = 'prepend' : '';
+                    refreshFrom !== 'following' || settings.classic_cards_order ? addMethod = 'append' : '';
+                    jcontainer[addMethod](stream.append((/* drkchange29 */(NODEJS && !replayLinkExists)? downloadWholeContainer : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : '')/* drkchange22 */);
                 }
-                jcontainer.prepend(stream.append((/* drkchange29 */(NODEJS && !replayLinkExists)? downloadWholeContainer : ''), link).append(repeat_getTheLink)/* drkchange22 */);
-            }
+
+            if (refreshFrom === 'following'){
+                 var existingBroadcasts = [];
+/* drkchange20 */var interestingToggle = false;
+/* drkchange20 */var interestingList = [];
+
+                for (var o in response) {
+                    existingBroadcasts.push(response[o].id);
+                }
+                for (var i = response.length - 1; i >= 0; i--) {
+                    broadcastsCache[response[i].id] = response[i];
+                    limitAddIDs(broadcastsCache, response[i].id, 100, existingBroadcasts);
+                }
+                if (settings.classic_cards_order){
+                    for (var i in response){
+                        createCard(i)
+                    }
+                } else {
+                    for (var i = broadcastsCache.idsQueue.length - 1; i >= 0; i--)
+                        createCard(i)
+                }
+
 /* drkchange00 */broadcastsCache.oldBroadcastsList = [];
-/* drkchange00 */for(var x in broadcastsCache.idsQueue){
-                broadcastsCache.oldBroadcastsList.push(broadcastsCache.idsQueue[x]);
+/* drkchange00 */for (var x in broadcastsCache.idsQueue) {
+                    broadcastsCache.oldBroadcastsList.push(broadcastsCache.idsQueue[x]);
+                }
+
+/* drkchange20 */jcontainer.prepend($('<br/><a class="watching right icon">Show interesting only</a><br/>').click(function () {
+                    var cards = jcontainer.find('.card');
+                    $.each(cards, function(i){
+                        for(a in broadcastsCache.interestingList){
+                            if($(cards[i]).hasClass(broadcastsCache.interestingList[a])){
+                                $(cards[i]).addClass('interesting');
+                            break;
+                            }
+                        }
+                    })
+                    if(!interestingToggle){
+                        interestingToggle = true;
+                        cards.filter(":visible").each(function(index, card){
+                            interestingList.push(card.getAttribute('nr'))
+                        })
+                        cards.not(".interesting").hide();
+                        $(".interesting").show();
+                    }else{
+                        interestingToggle = false;
+                        $(".interesting").hide();
+                        cards.filter(function(i, card){
+                            return (interestingList.indexOf(card.getAttribute('nr')) >= 0)
+                        }).show()
+                        interestingList = [];
+                    }
+                    $(window).trigger('scroll');    // for lazy load
+                }));
+            } else { //if not following tab
+                for (var i in response)
+                    createCard(i)
             }
+
 /* drkchange19 */var sortedAlready = false;
-            jcontainer.prepend($('<a class="watching right icon">Sort by watching</a><br/>').click(function () {  // sort cards in given jquery-container
+            jcontainer.prepend($('<a class="watching right icon">Sort by watching</a>').click(function () {  // sort cards in given jquery-container
                 var cards = jcontainer.find('.card');
                 if(!sortedAlready){
                     var sorted = cards.sort(function (a, b) {
@@ -2112,33 +2093,7 @@ function refreshList2(jcontainer, title, /* drkchange00 */ refreshFrom) {  // us
                 jcontainer.append(sorted);
                 $(window).trigger('scroll');    // for lazy load
             }));
-/* drkchange20 */jcontainer.prepend($('<a class="watching right icon">Show interesting only</a><br/>').click(function () {
-                var cards = jcontainer.find('.card');
-                $.each(cards, function(i){
-                    for(a in broadcastsCache.interestingList){
-                        if($(cards[i]).hasClass(broadcastsCache.interestingList[a])){
-                            $(cards[i]).addClass('interesting');
-                        break;
-                        }
-                    }
-                })
-                if(!interestingToggle){
-                    interestingToggle = true;
-                    cards.filter(":visible").each(function(index, card){
-                        interestingState.push(card.getAttribute('nr'))
-                    })
-                    cards.not(".interesting").hide();
-                    $(".interesting").show();
-                }else{
-                    interestingToggle = false;
-                    $(".interesting").hide();
-                    cards.filter(function(i, card){
-                        return (interestingState.indexOf(card.getAttribute('nr')) >= 0)
-                    }).show()
-                    interestingState = [];
-                }
-                $(window).trigger('scroll');    // for lazy load
-            }));
+
             if (typeof response[0].n_watching == 'undefined')
                 Api('getBroadcasts', {
                     broadcast_ids: ids,
@@ -2300,7 +2255,7 @@ function getM3U(id, jcontainer) {
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + /* drkchange14 */(_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (locked ? (' ' + '&quot;' + cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
                     var downloadLink = /*drkchange02*/$('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
-                    .click(switchSection.bind(null, 'Console', {url: '',/* drkchange29 */rurl: replay_url, cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
+                        .click(switchSection.bind(null, 'Console', {url: '',/* drkchange29 */rurl: replay_url, cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
                     
                     replayLContainer.append(
     /* drkchange15 */   settings.showM3Ulinks ? [link,  ' | '] : '',
@@ -2364,11 +2319,10 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
-
+        
         // For live
         var hls_url = r.hls_url || r.https_hls_url || r.lhls_url;
         if (hls_url) {
-
             callback(hls_url, null, cookies, name, r.broadcast.user_id, r.broadcast.username, /* drkchange06 */r.broadcast);
         }
 

@@ -822,3 +822,7 @@ fieldset.languageFilter {
 #broadcastLink{
     width: 100%;
 }
+
+#optionsContainer{
+    display: inline-table;
+}
