@@ -762,7 +762,7 @@ ApiTest: function () {
                 params = '{}';
                 $('#params').text(params);
             }
-            ApiWorker(http_method, url_root, method, headers, JSON.parse(params), function (response) {
+            ApiWorker(http_method, url_root, method, JSON.parse(headers), JSON.parse(params), function (response) {
                 $('#response').html(JSON.stringify(response, null, 4));
             }, function (error) {
                 $('#response').text(error);
@@ -2776,7 +2776,6 @@ function ApiWorker(http_method, api_root, method, headers, params, callback, cal
         params.cookie = loginTwitter.cookie;
     Progress.start();
     var xhrIndex = XHR.length;
-    debugger;
     var req = GM_xmlhttpRequest({
         method: http_method,
         url: api_root + method,
