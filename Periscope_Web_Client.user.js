@@ -752,6 +752,7 @@ ApiTest: function () {
             var url_root = $('#url_root').val().trim();
             if (url_root == '')
                 throw Error('url is empty');
+            var http_method = $('#http_method').val().trim();
             var method = $('#method').val().trim();
             var headers = $('#headers').val().trim();
             if (headers == '')
@@ -761,7 +762,7 @@ ApiTest: function () {
                 params = '{}';
                 $('#params').text(params);
             }
-            ApiWorker('POST', url_root, method, headers, JSON.parse(params), function (response) {
+            ApiWorker(http_method, url_root, method, headers, JSON.parse(params), function (response) {
                 $('#response').html(JSON.stringify(response, null, 4));
             }, function (error) {
                 $('#response').text(error);
@@ -775,6 +776,7 @@ ApiTest: function () {
             '<a href="https://github.com/gitnew2018/My-OpenPeriscope"><img style="position: absolute; top: 0; right: 0; border: 0;" src="' + IMG_PATH + '/images/forkme.png" alt="Fork me on GitHub"></a>' +
             'Some documentation can be found in <a href="http://static.pmmlabs.ru/OpenPeriscope" target="_blank">docs by @cjhbtn</a>' +
             '<br/><dt>Url</dt><iframe id="urlautocomplete" name="urlautocomplete" style="display: none;"></iframe><form target="urlautocomplete"><input id="url_root" type="text" value="https://api.periscope.tv/api/v2/" autocomplete="on"/></input></form><br/>' +
+            '<br/><dt>Http</dt><select id="http_method"><option value="POST" selected="selected">POST</option><option value="GET">GET</option></select><br/>' +
             '<br/><dt>Method</dt><iframe id="forautocomplete" name="forautocomplete" style="display: none;"></iframe><form target="forautocomplete"><input id="method" type="text" placeholder="mapGeoBroadcastFeed" autocomplete="on"/></form><br/>' +
             '<BR/><dt>Header</dt><textarea id="headers">'+JSON.stringify(default_headers, null, 4)+'</textarea><br/>' +
             '<dt>Parameters</dt><textarea id="params" placeholder=\'{"include_replay": true, "p1_lat": 1, "p1_lng": 2, "p2_lat": 3, "p2_lng": 4}\'/><br/><br/>'
