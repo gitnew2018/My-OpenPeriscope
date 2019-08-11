@@ -755,8 +755,6 @@ ApiTest: function () {
             var http_method = $('#http_method').val().trim();
             var method = $('#method').val().trim();
             var headers = $('#headers').val().trim();
-            if (headers == '')
-                throw Error('headers are empty');
             var params = $('#params').val().trim();
             if (params == '') {
                 params = '{}';
