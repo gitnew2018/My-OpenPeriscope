@@ -547,7 +547,7 @@ var languageSelect = '<dt>Language: <select class="lang">\
             <option>all</option>\
         </select></dt>';
 function refreshProfile() {
-    Api(default_api_root, 'user', default_headers, {
+    Api('user', {
         user_id: loginTwitter.user.id
     }, function (userResponse) {
         loginTwitter.user = userResponse.user;
@@ -681,7 +681,7 @@ Map: function () {
         clearXHR();
         if (mapBounds._northEast.lat == mapBounds._southWest.lat && mapBounds._northEast.lng == mapBounds._southWest.lng)
             console.warn('Map is out of mind');
-        Api(default_api_root, 'mapGeoBroadcastFeed', default_headers, {
+        Api('mapGeoBroadcastFeed', {
             "include_replay": true,
             "p1_lat": mapBounds._northEast.lat,
             "p1_lng": mapBounds._northEast.lng,
@@ -761,7 +761,7 @@ ApiTest: function () {
                 params = '{}';
                 $('#params').text(params);
             }
-            Api(url_root, method, headers, JSON.parse(params), function (response) {
+            ApiWorker('POST', url_root, method, headers, JSON.parse(params), function (response) {
                 $('#response').html(JSON.stringify(response, null, 4));
             }, function (error) {
                 $('#response').text(error);
@@ -787,8 +787,8 @@ Top: function () {
     var langDt = $(languageSelect);
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
     var button = $('<a class="button" id="refreshTop">Refresh</a>').click(function () {
-        Api(default_api_root, 'rankedBroadcastFeed', default_headers, {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
-        Api(default_api_root, 'featuredBroadcastFeed', default_headers, {}, refreshList(featured, '<h3>Featured</h3>'));
+        Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
+        Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
 
     if (!settings.refreshTopOnLoad)
@@ -812,7 +812,7 @@ Search: function () {
     var searchBroadcast = function (query) {
         if (typeof query == 'string')
             input.val(query);
-        Api(default_api_root, 'broadcastSearch', default_headers, {
+        Api('broadcastSearch', {
             search: input.val(),
             include_replay: $('#includeReplays')[0].checked
         }, refreshList(searchResults, '<h3>Search results for '+input.val()+'</h3>'));
@@ -847,7 +847,7 @@ Search: function () {
     }
 
     function RefreshChannels() {
-        Api(default_api_root, 'authorizeToken', default_headers, {
+        Api('authorizeToken', {
             service: 'channels'
         }, function (authorizeToken) {
             authorization_token = authorizeToken.authorization_token;
@@ -862,7 +862,7 @@ Search: function () {
                             var ids = [];
                             for (var i in chan.Broadcasts)
                                 ids.push(chan.Broadcasts[i].BID);
-                            Api(default_api_root, 'getBroadcasts', default_headers, {
+                            Api('getBroadcasts', {
                                 broadcast_ids: ids,
                                 only_public_publish: true
                             }, refreshList(searchResults, '<h3>' + channelName + ', ' + chan.NLive + ' lives, ' + chan.NReplay + ' replays</h3>'));
@@ -999,7 +999,7 @@ Create: function () {
             widthInput.val(320);
         if (heightInput.val().trim() == '')
             heightInput.val(568);
-        Api(default_api_root, 'createBroadcast', default_headers, {
+        Api('createBroadcast', {
             lat: +$('#lat').val() || 0,
             lng: +$('#lon').val() || 0,
             //supports_psp_version: [1, 0, 0],
@@ -1007,7 +1007,7 @@ Create: function () {
             width: +widthInput.val(),
             height: +heightInput.val()
         }, function (createInfo) {
-            Api(default_api_root, 'publishBroadcast', default_headers, {
+            Api('publishBroadcast', {
                 broadcast_id: createInfo.broadcast.id,
                 friend_chat: $('#friend_chat')[0].checked,
                 has_location: true,
@@ -1228,7 +1228,7 @@ Chat: function () {
         title.empty();
         historyDiv.empty();
          //Load user list
-        Api(default_api_root, 'getBroadcastViewers', default_headers, {
+        Api('getBroadcastViewers', {
             broadcast_id: broadcast_id.val().trim()
         }, function(viewers){
             userlist.empty();
@@ -1238,7 +1238,7 @@ Chat: function () {
                     userlistAdd(user);
                 }
         });
-        Api(default_api_root, 'accessChannel', default_headers, {
+        Api('accessChannel', {
             broadcast_id: broadcast_id.val().trim()
         }, function (broadcast) {
             var userLink = $('<a class="username">(@' + broadcast.broadcast.username + ')</a>').click(switchSection.bind(null, 'User', broadcast.broadcast.user_id));
@@ -1483,13 +1483,13 @@ User: function () {
         /* drkchange26 */name.startsWith('@') ? (name = name.slice('1',name.length)) : '';
         /* drkchange26 */var param = {user_id : id};
         /* drkchange26 */name ? param = {username : name} : '' ;
-        Api(default_api_root, 'user', default_headers, param, function (response) {
+        Api('user', param, function (response) {
             /* drkchange26 */id = response.user.id;
             /* drkchange26 */$('#user_id').val(id);
             resultUser.prepend(getUserDescription(response.user));
             FollowersSpoiler.append(' (' + response.user.n_followers + ')');
             FollowingSpoiler.append(' (' + response.user.n_following + ')');
-            Api(default_api_root, 'userBroadcasts', default_headers, {
+            Api('userBroadcasts', {
                 user_id: id,
                 all: true
             }, function (broadcasts) {
@@ -1501,7 +1501,7 @@ User: function () {
         var FollowersSpoiler = $('<div class="spoiler menu" data-spoiler-link="followers">Followers</div>').on("jq-spoiler-visible", function() {
             var followersDiv = $('#userFollowers');
             if (!followersDiv.html())
-                Api(default_api_root, 'followers', default_headers, {
+                Api('followers', {
                     user_id: id
                 }, function (followers) {
                     if (followers.length){
@@ -1516,7 +1516,7 @@ User: function () {
         var FollowingSpoiler = $('<div class="spoiler menu" data-spoiler-link="following">Following</div>').on("jq-spoiler-visible", function() {
             var followingDiv = $('#userFollowing');
             if (!followingDiv.html())
-                Api(default_api_root, 'following', default_headers, {
+                Api('following', {
                     user_id: id
                 }, function (following) {
                     if (following.length){
@@ -1535,7 +1535,7 @@ User: function () {
             var BlockedSpoiler = $('<div class="spoiler menu" data-spoiler-link="blocked">Blocked</div>').on("jq-spoiler-visible", function() {
                 var blockedDiv = $('#userBlocked');
                 if (!blockedDiv.html())
-                    Api(default_api_root, 'block/users', default_headers, {}, function (blocked) {
+                    Api('block/users', {}, function (blocked) {
                         if (blocked.length)
                             for (var i in blocked) {
                                 blocked[i].is_blocked = true;
@@ -1554,7 +1554,7 @@ User: function () {
 },
 People: function () {
     var refreshButton = $('<a class="button">Refresh</a>').click(function () {
-        Api(default_api_root, 'suggestedPeople', default_headers, {
+        Api('suggestedPeople', {
             languages: [$('#People .lang').val()]
         }, function (response) {
             var result = $('#resultPeople');
@@ -1567,7 +1567,7 @@ People: function () {
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
                 result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
-            Api(default_api_root, 'suggestedPeople', default_headers, {}, function (response) {
+            Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
                     for (var i in response.hearted)
@@ -1577,7 +1577,7 @@ People: function () {
         });
     });
     var searchPeople = function () {
-        Api(default_api_root, 'userSearch', default_headers, {
+        Api('userSearch', {
             search: $('#search').val()
         }, function (response) {
             var result = $('#resultPeople');
@@ -1589,7 +1589,7 @@ People: function () {
                     found_exact=true;
             }
             if (!found_exact)
-                Api(default_api_root, 'user', default_headers, {
+                Api('user', {
                     username: $('#search').val()
                 }, function (user) {
                     result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
@@ -1610,7 +1610,7 @@ Edit: function () {
     var button = $('<a class="button">Save</a>').click(function () {
         var uname = $('#uname').val();
         if (uname != loginTwitter.user.username) {
-            Api(default_api_root, 'verifyUsername', default_headers, {
+            Api('verifyUsername', {
                 username: uname,
                 display_name: loginTwitter.user.display_name
             }, function () {
@@ -1620,7 +1620,7 @@ Edit: function () {
         }
         var description = $('#description').val();
         if (description != loginTwitter.user.description)
-            Api(default_api_root, 'updateDescription', default_headers, {
+            Api('updateDescription', {
                 description: description
             }, function () {
                 loginTwitter.user.description = description;
@@ -1628,7 +1628,7 @@ Edit: function () {
             });
         var dname = $('#dname').val();
         if (dname != loginTwitter.user.display_name) {
-            Api(default_api_root, 'updateDisplayName', default_headers, {
+            Api('updateDisplayName', {
                 display_name: dname
             }, function () {
                 loginTwitter.user.display_name = dname;
@@ -1645,7 +1645,7 @@ Edit: function () {
 
     var settingsContainer = $('<div/>');
     var tempSettings;
-    Api(default_api_root, 'getSettings', default_headers, {}, function (settingsResponse) {
+    Api('getSettings', {}, function (settingsResponse) {
         loginTwitter.settings = settingsResponse;
         localStorage.setItem('loginTwitter', JSON.stringify(loginTwitter));
         tempSettings = settingsResponse;
@@ -1658,7 +1658,7 @@ Edit: function () {
         }
     });
     var buttonSettings = $('<a class="button">Save</a>').click(function () {
-        Api(default_api_root, 'setSettings', default_headers, {
+        Api('setSettings', {
             settings: tempSettings
         }, function (r) {
             if (r.success){
@@ -1864,24 +1864,24 @@ function addUserContextMenu(node, id, username) {
         ev.preventDefault();
         var contextmenu = $('<div class="contextmenu" style="top: ' + ev.pageY + 'px; left: ' + ev.pageX + 'px;"/>')
             .append($('<div>Follow</div>').click(function () {
-                Api(default_api_root, 'follow', default_headers, {
+                Api('follow', {
                     user_id: id
                 });
             }))
             .append($('<div>Unfollow</div>').click(function () {
-                Api(default_api_root, 'unfollow', default_headers, {
+                Api('unfollow', {
                     user_id: id
                 });
             }))
             .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
                     '<div data-clipboard-text="' + id + '">Copy user ID</div>')
             .append($('<div>Block user</div>').click(function () {
-                Api(default_api_root, 'block/add', default_headers, {
+                Api('block/add', {
                     to: id
                 });
             }))
             .append($('<div>Unlock user</div>').click(function () {
-                Api(default_api_root, 'block/remove', default_headers, {
+                Api('block/remove', {
                     to: id
                 });
             }))
@@ -2105,7 +2105,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
             }));
 
             if (typeof response[0].n_watching == 'undefined')
-                Api(default_api_root, 'getBroadcasts', default_headers, {
+                Api('getBroadcasts', {
                     broadcast_ids: ids,
                     only_public_publish: true
                 }, function (info) {
@@ -2356,8 +2356,8 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
     };
     /* drkchange14 */partialReplay ? ( ApiParameters.replay_redirect = false, ApiParameters.latest_replay_playlist = true) : '';
    (function a(ApiParameters){//private replays correctly attach to their card.
-        Api(default_api_root, 'accessVideoPublic', default_headers, ApiParameters, getURLCallback, function(){
-            Api(default_api_root, 'accessChannel', default_headers, ApiParameters, getURLCallback) // private video case
+        Api('accessVideoPublic', ApiParameters, getURLCallback, function(){
+            Api('accessChannel', ApiParameters, getURLCallback) // private video case
         });
     })(ApiParameters)
 }
@@ -2552,13 +2552,13 @@ function getDescription(stream) {
     }
     if (stream.user_id == loginTwitter.user.id)
         var deleteLink = $('<a class="delete right icon" title="Delete"/>').click(function () {
-            Api(default_api_root, 'deleteBroadcast', default_headers, {broadcast_id: stream.id}, function (resp) {
+            Api('deleteBroadcast', {broadcast_id: stream.id}, function (resp) {
                 if (resp.success)
                     description.parent().remove();
             });
         });
     var screenlistLink = $('<a class="screenlist right icon">Preview</a>').click(function () {
-        Api(default_api_root, 'replayThumbnailPlaylist', default_headers, {
+        Api('replayThumbnailPlaylist', {
             broadcast_id: stream.id
         }, function (thumbs) {
             loadScreenPreviewer(stream, thumbs);
@@ -2600,7 +2600,7 @@ function getUserDescription(user) {
     .append($('<a class="button' + (user.is_following ? ' activated' : '') + '">' + (user.is_following ? 'unfollow' : 'follow') + '</a>').click(function () {
         var el = this;
         /* drkchange03 */var selectButton=$(el).next().next()
-        Api(default_api_root, el.innerHTML, default_headers, { // follow or unfollow
+        Api(el.innerHTML, { // follow or unfollow
             user_id: user.id
         }, function (r) {
             if (r.success) {
@@ -2617,7 +2617,7 @@ function getUserDescription(user) {
     }))
     .append($('<a class="button">' + (user.is_blocked ? 'unblock' : 'block') + '</a>').click(function () {
         var el = this;
-        Api(default_api_root, el.innerHTML == 'block' ? 'block/add' : 'block/remove', default_headers, {
+        Api(el.innerHTML == 'block' ? 'block/add' : 'block/remove', {
             to: user.id
             }, function (r) {
                 if (r.success)
@@ -2764,15 +2764,19 @@ function clearXHR() {   // abort all running XHR requests
 }
 /* LEVEL 0 */
 var XHR = [];
-function Api(api_root, method, headers, params, callback, callback_fail) {
-    if (!params)
+function Api(method, params, callback, callback_fail) {
+    ApiWorker('POST', default_api_root, method, default_headers, params, callback, callback_fail);
+}
+function ApiWorker(http_method, api_root, method, headers, params, callback, callback_fail) {
+        if (!params)
         params = {};
     if (loginTwitter && loginTwitter.cookie)
         params.cookie = loginTwitter.cookie;
     Progress.start();
     var xhrIndex = XHR.length;
+    debugger;
     var req = GM_xmlhttpRequest({
-        method: 'POST',
+        method: http_method,
         url: api_root + method,
         headers: headers,
         timeout: 10000,
@@ -2811,7 +2815,7 @@ function Api(api_root, method, headers, params, callback, callback_fail) {
     XHR.push(req);
 }
 function SignIn3(session_key, session_secret) {
-    Api(default_api_root, 'loginTwitter', default_headers, {
+    Api('loginTwitter', {
         "session_key": session_key,
         "session_secret": session_secret
     }, function (response) {
@@ -2819,7 +2823,7 @@ function SignIn3(session_key, session_secret) {
         loginTwitter = response;
         Ready(loginTwitter);
         if (!loginTwitter.user.username)    // User registration
-            Api(default_api_root, 'verifyUsername', default_headers, {
+            Api('verifyUsername', {
                 username: loginTwitter.suggested_username,
                 display_name: loginTwitter.user.display_name
             }, function (verified) {
@@ -2998,7 +3002,7 @@ function SignInSessionID()
     setSet('session_cookie', $('#secret').val());
     if (settings.session_cookie)
     {
-        Api(default_api_root, 'user', default_headers, { cookie: settings.session_cookie }, 
+        Api('user', { cookie: settings.session_cookie }, 
             function (userResponse) 
             {
                 loginTwitter = localStorage.getItem('loginTwitter');
@@ -3010,7 +3014,7 @@ function SignInSessionID()
                 loginTwitter.user.profile_image_urls.sort(function (a, b) {
                     return a.width * a.height - b.width * b.height;
                 });
-                Api(default_api_root, 'getSettings', default_headers, {}, 
+                Api('getSettings', {}, 
                     function (settingsResponse) 
                     {
                         loginTwitter.settings = settingsResponse;
