@@ -1894,12 +1894,12 @@ function addUserContextMenu(node, id, username) {
                     to: id
                 });
             }))
-            .append($('<div>Profile on Periscope</div>')).click(function(){
+            .append($('<div>Profile on Periscope</div>').click(function(){
                 var win = window.open(
                     "https://periscope.tv/" + username, 
                     "PeriscopeProfile" + (settings.previewSeparateWindows?username:''), 
                     "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=550,top=100,left="+(screen.width/2));
-            })
+            }))
             .click(function (event) {
                 $(this).remove();
             })
