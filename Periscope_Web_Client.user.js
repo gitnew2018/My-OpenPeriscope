@@ -163,13 +163,13 @@ function setupAccordion() { ///< call after creating accordion elements
               } else {
                 panel.style.maxHeight = panel.scrollHeight + "px";
               }
-
-            // if (panel.style.display === "block") {
-            //     panel.style.display = "none";
-            // } else {
-            //     panel.style.display = "block";
-            // }
         });
+
+        // open already opened sections
+        if (acc[i].classList.contains("open")) {
+            var panel = acc[i].nextElementSibling;
+            panel.style.maxHeight = panel.scrollHeight + "px";
+        }
     }
 }
 
@@ -1777,7 +1777,7 @@ Edit: function () {
     });
 
     $('#right').append($('<div id="Edit"/>').append(
-        '<h3 class="accordion">Profile edit</h3>',
+        '<h3 class="accordion open">Profile edit</h3>',
         $('<div class="panel"/>').append('<dt>Display name:</dt><input id="dname" type="text" value="' + loginTwitter.user.display_name + '"><br/>' +
         '<dt>Username:</dt><input id="uname" type="text" value="' + loginTwitter.user.username + '"><br/>' +
         '<dt>Description:</dt><input id="description" type="text" value="' + loginTwitter.user.description + '"><br/>' +
@@ -1802,13 +1802,6 @@ Edit: function () {
         /* drkchange change options order*/'<br/><hr color="#E0E0E0" size="1">' +
         '<h3 class="accordion">Periscope settings</h3>',
         $('<div class="panel"/>').append(settingsContainer),
-        '<br/><hr color="#E0E0E0" size="1">',
-        '<h3 class="accordion">Groups</h3>',
-        $('<div class="panel"/>').append(
-            '<a class="button">14</a>Invites<br/>',
-            '<h4>TODO</h4><br/>'
-        ),
-        '<br/><hr color="#E0E0E0" size="1">',
         buttonSettings
     ));
     setupAccordion();
