@@ -1801,8 +1801,7 @@ Edit: function () {
         /* drkchange16 */'<br>', show_nodeDown_linksPrv),
         /* drkchange change options order*/'<br/><hr color="#E0E0E0" size="1">' +
         '<h3 class="accordion">Periscope settings</h3>',
-        $('<div class="panel"/>').append(settingsContainer),
-        buttonSettings
+        $('<div class="panel"/>').append(settingsContainer, "<br/>", buttonSettings)
     ));
     setupAccordion();
 },
