@@ -36,7 +36,7 @@ var emoji = new EmojiConvertor();
 /* drkchange03 */var selectedDownloadList = localStorage.getItem('selectedUsersDownloadList') || "";
 var IMG_PATH = 'https://raw.githubusercontent.com/Max104t/My-OpenPeriscope//split-refactor-api';
 var settings = JSON.parse(localStorage.getItem('settings')) || {};
-NODEJS = typeof require === 'function';
+const NODEJS = typeof require === 'function';
 if (NODEJS) {  // for NW.js
     var gui = require('nw.gui');
     gui.App.addOriginAccessWhitelistEntry('https://api.twitter.com/', 'app', 'openperiscope', true);    // allow redirect to app://
