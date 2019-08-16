@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.11
+// @version     0.1.12
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -148,9 +148,8 @@ if (location.href == 'https://api.twitter.com/oauth/authorize') {
 
 function setupAccordion() { ///< call after creating accordion elements
     var acc = document.getElementsByClassName("accordion");
-    var i;
 
-    for (i = 0; i < acc.length; i++) {
+    for (var i = 0; i < acc.length; i++) {
         acc[i].addEventListener("click", function() {
             /* Toggle between adding and removing the "active" class,
             to highlight the button that controls the panel */
@@ -217,7 +216,7 @@ function Ready(loginInfo) {
         {text: 'API test', id: 'ApiTest'},
         {text: 'Map', id: 'Map'},
         {text: 'Top', id: 'Top'},
-        /* drkchange18 */{text: 'Following', id: 'Following'},
+        {text: 'Following', id: 'Following'},
         {text: 'Search broadcasts', id: 'Search'},
         {text: 'New broadcast', id: 'Create'},
         {text: 'Chat', id: 'Chat'},
@@ -2060,7 +2059,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
 
                             stream.find('.responseLinksReplay').append(
             /* drkchange15 */(settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U, ' | '] : '',
-            /* drkchange14 */(settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink, ' | '] : ''),
+            /* drkchange14 */(settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink.clone(true,true), ' | '] : ''),
             /* drkchange14 */ settings.showPRlinks ? RclipboardLink : '',
             /* drkchange09 */ showDowLink ? [' | ', RclipboardDowLink] : '', '<br/>'
                             );
@@ -2368,8 +2367,8 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
     var getURLCallback =function (r) {
         var date_created = new Date(r.broadcast.start);
         var date_created_str = date_created.getFullYear() + '-' + zeros(date_created.getMonth() + 1) + '-' + zeros(date_created.getDate()) + '_' + zeros(date_created.getHours()) + '.' + zeros(date_created.getMinutes());
-        var name = cleanFilename(/* drkchange24 */(r.broadcast.is_locked ? 'PV_':'') + (partialReplay ? 'P':'') + (r.replay_url ? 'R_':'') + date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
         var privateBroadacast = r.broadcast.is_locked === true;
+        var name = cleanFilename(/* drkchange24 */(privateBroadacast ? 'PV_':'') + (partialReplay ? 'P':'') + (r.replay_url ? 'R_':'') + date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
@@ -2382,7 +2381,7 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
 
         // For replay
         var replay_url = r.replay_url
-        if(replay_url && privateBroadacast ){ // 301 redirection For private replay
+        if(replay_url && !replay_url.endsWith('?type=replay') ){ // 301 redirection For private replay and some rare non private.
             linkRedirection301(replay_url, ifReplay)
         }else if (replay_url){
                 ifReplay(replay_url, '');
