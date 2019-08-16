@@ -778,20 +778,19 @@ Search: function () {
     var searchButton = $('<a class="button">Search</a>').click(searchBroadcast);
     var langDt = $(languageSelect).change(RefreshChannels);
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
-    var authorization_token;
 
     function RefreshChannels() {
         PeriscopeWrapper.V2_POST_Api('authorizeToken', {
             service: 'channels'
         }, function (authorizeToken) {
-            authorization_token = authorizeToken.authorization_token;
+            channels_url_root = 'https://channels.periscope.tv/v1/channels'
             PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
                 channels.empty();
                 for (var i in response.Channels) {
                     var channel = response.Channels[i];
                     var Name = $('<a>' + channel.Name + '</a>').click(searchBroadcast.bind(null, channel.Name));
                     var PublicTag = $('<a>' + channel.PublicTag + '</a>').click(searchBroadcast.bind(null, channel.PublicTag));
-                    var PublicChannel = $('<a>' + channel.Name + '</a>').click(ApiChannels.bind(null, function (channelName) {
+                    var PublicChannel = $('<a>' + channel.Name + '</a>').click(PeriscopeWrapper.V1_GET_ApiChannels.bind(null, function (channelName) {
                         return function (chan) {
                             var ids = [];
                             for (var i in chan.Broadcasts)
@@ -801,14 +800,14 @@ Search: function () {
                                 only_public_publish: true
                             }, refreshList(searchResults, '<h3>' + channelName + ', ' + chan.NLive + ' lives, ' + chan.NReplay + ' replays</h3>'));
                         };
-                    }(channel.Name), channel.CID));
+                    }(channel.Name), channels_url_root + '/' + channel.CID + '/broadcasts', authorizeToken.authorization_token, langDt));
                     channels.append($('<p/>').append('<div class="lives right icon" title="Lives / Replays">' + channel.NLive + ' / ' + channel.NReplay + '</div>',
                         PublicChannel, (channel.Featured ? ' FEATURED<br>' : ''), '<br>',
                         (channel.PublicTag ? ['Tags: ', Name, ', ', PublicTag, '<br>'] : ''),
                         'Description: ' + channel.Description)
                     );
                 }
-            });
+            }, channels_url_root, authorizeToken.authorization_token, langDt);
         });
     }
 

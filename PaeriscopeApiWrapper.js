@@ -98,11 +98,11 @@ var PeriscopeWrapper = {
     default_headers: {
         'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
     },
-    V1_GET_ApiChannels: function(callback, cid) {
+    V1_GET_ApiChannels: function(callback, url, authorization_token, langDt) {
         Progress.start();
         GM_xmlhttpRequest({
             method: 'GET',
-            url: 'https://channels.periscope.tv/v1/channels' + (cid ? '/' + cid + '/broadcasts' : ''),
+            url: url,
             headers: {
                 Authorization: authorization_token,
                 /* drkchange show all channels*/ 'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
@@ -113,7 +113,7 @@ var PeriscopeWrapper = {
                 if (r.status == 200) {
                     var response = JSON.parse(r.responseText);
                     if ($('#debug')[0].checked)
-                        console.log('channels' + (cid ? ' cid ' + cid : '') + ': ', response);
+                        console.log('channels ' + url + ' : ', response);
                     callback(response);
                 }
                 else
