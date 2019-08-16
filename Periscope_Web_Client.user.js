@@ -28,14 +28,14 @@
 // @noframes
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
-// @resource    CSS https://raw.githubusercontent.com/Max104t/My-OpenPeriscope/support-groups/style.css
+// @resource    CSS https://raw.githubusercontent.com/Max104t/My-OpenPeriscope/split-refactor-api/style.css
 
 // ==/UserScript==
 
 var emoji = new EmojiConvertor();
 /* drkchange06 */var childProcesses=[]; //list of video downloading processes
 /* drkchange03 */var selectedDownloadList = localStorage.getItem('selectedUsersDownloadList') || "";
-var IMG_PATH = 'https://raw.githubusercontent.com/Max104t/My-OpenPeriscope//split-refactor-api';
+var IMG_PATH = 'https://raw.githubusercontent.com/Max104t/My-OpenPeriscope/split-refactor-api';
 var settings = JSON.parse(localStorage.getItem('settings')) || {};
 const NODEJS = typeof require === 'function';
 if (NODEJS) {  // for NW.js

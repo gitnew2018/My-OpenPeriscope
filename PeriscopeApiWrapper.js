@@ -122,9 +122,7 @@ var PeriscopeWrapper = {
                     else
                         console.log('channels error: ' + r.status + ' ' + r.responseText);
                 }
-                else
-                    console.log('channels error: ' + r.status + ' ' + r.responseText);
-            }
+            });
         });
     },
     V2_POST_Api: function(method, params, callback, callback_fail) {
