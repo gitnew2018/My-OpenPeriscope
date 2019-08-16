@@ -32,51 +32,14 @@
 var emoji = new EmojiConvertor();
 /* drkchange06 */var childProcesses=[]; //list of video downloading processes
 /* drkchange03 */var selectedDownloadList = localStorage.getItem('selectedUsersDownloadList') || "";
-NODEJS = typeof GM_xmlhttpRequest === 'undefined';
-var default_api_root = 'https://api.periscope.tv/api/v2/';
-var default_headers = {
-    'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
-}
 var IMG_PATH = 'https://raw.githubusercontent.com/gitnew2018/My-OpenPeriscope/master';
 var settings = JSON.parse(localStorage.getItem('settings')) || {};
+NODEJS = typeof require === 'function';
 if (NODEJS) {  // for NW.js
     var gui = require('nw.gui');
     gui.App.addOriginAccessWhitelistEntry('https://api.twitter.com/', 'app', 'openperiscope', true);    // allow redirect to app://
     const https = require('https');
     const url = require('url');
-    GM_xmlhttpRequest = function (options) {
-        var onload = options.onload;
-        options.onload = null;
-        var u = url.parse(options.url);
-        options.host = u.host;
-        options.hostname = u.hostname;
-        options.path = u.path;
-        options.protocol = u.protocol;
-        var chunks = '';
-        var chunks2 = [];// needed for binary decryption key
-        var req = https.request(options, function (res) {
-            // res.setEncoding('utf8');
-            res.on('data', function (chunk) {
-                chunks += chunk;
-                chunks2.push(chunk);
-            });
-            res.on('end', function() {
-                onload({
-                    status: res.statusCode,
-                    responseText: chunks,
-                    finalUrl: res.headers['location'],
-                    responseArray: chunks2
-                });
-            });
-        });
-        req.on('error', function (e) {
-            console.error(e);
-        });
-        if (options.data)
-            req.write(options.data);
-        req.end();
-        return req;
-    };
     IMG_PATH = '';
     // Back & Forward hotkeys
     $(window).on('keydown', function (e) {
@@ -270,7 +233,7 @@ var Notifications = {
             if (!settings.followingInterval)
                 setSet('followingInterval', this.default_interval);
             if (settings.followingNotifications || settings.automaticDownload)
-                this.interval = setInterval(Api.bind(null, 'followingBroadcastFeed', {}, function (new_list) {
+                this.interval = setInterval(PeriscopeWrapper.V2_POST_Api.bind(null, 'followingBroadcastFeed', {}, function (new_list) {
                     /* drkchange21 */var getReplayUrl;
                     /* drkchange21 */var cardsContainer = $('#right > div:visible > div');
                     var new_list_ids =[];
@@ -574,7 +537,7 @@ var languageSelect = '<dt>Language: <select class="lang">\
             <option>all</option>\
         </select></dt>';
 function refreshProfile() {
-    Api('user', {
+    PeriscopeWrapper.V2_POST_Api('user', {
         user_id: loginTwitter.user.id
     }, function (userResponse) {
         loginTwitter.user = userResponse.user;
@@ -708,7 +671,7 @@ Map: function () {
         clearXHR();
         if (mapBounds._northEast.lat == mapBounds._southWest.lat && mapBounds._northEast.lng == mapBounds._southWest.lng)
             console.warn('Map is out of mind');
-        Api('mapGeoBroadcastFeed', {
+        PeriscopeWrapper.V2_POST_Api('mapGeoBroadcastFeed', {
             "include_replay": true,
             "p1_lat": mapBounds._northEast.lat,
             "p1_lng": mapBounds._northEast.lng,
@@ -736,7 +699,7 @@ Map: function () {
                     var description = getDescription(stream);
                     marker.bindPopup(description);
                     marker.on('popupopen', getM3U.bind(null, stream.id, $(description)));
-                    marker.on('popupopen', Api.bind(null, 'getBroadcasts', {
+                    marker.on('popupopen', PeriscopeWrapper.V2_POST_Api.bind(null, 'getBroadcasts', {
                         broadcast_ids: [stream.id],
                         only_public_publish: true
                     }, function (info) {
@@ -812,7 +775,7 @@ ApiTest: function () {
                 '<option value="TRACE">TRACE</option>'+                   // The TRACE method performs a message loop-back test along the path to the target resource.
                 '<option value="PATCH">PATCH</option></select><br/>' +    // The PATCH method is used to apply partial modifications to a resource.   
             '<br/><dt>Method</dt><iframe id="forautocomplete" name="forautocomplete" style="display: none;"></iframe><form target="forautocomplete"><input id="method" type="text" placeholder="mapGeoBroadcastFeed" autocomplete="on"/></form>' +
-            '<br/><dt>Header</dt><textarea id="headers">'+JSON.stringify(default_headers, null, 4)+'</textarea><br/>' +
+            '<br/><dt>Header</dt><textarea id="headers">'+JSON.stringify(PeriscopeWrapper.default_headers, null, 4)+'</textarea><br/>' +
             '<dt>Parameters</dt><textarea id="params" placeholder=\'{"include_replay": true, "p1_lat": 1, "p1_lng": 2, "p2_lat": 3, "p2_lng": 4}\'/><br/><br/>'
             , submitButton, '<br/><br/><pre id="response"/>Response is also displayed in the browser console, if [Debug mode] is checked</pre>')
     );
@@ -823,8 +786,8 @@ Top: function () {
     var langDt = $(languageSelect);
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
     var button = $('<a class="button" id="refreshTop">Refresh</a>').click(function () {
-        Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
-        Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
+        PeriscopeWrapper.V2_POST_Api('rankedBroadcastFeed', {languages: /* drkchange */ (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
+        PeriscopeWrapper.V2_POST_Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
 
     if (!settings.refreshTopOnLoad)
@@ -848,7 +811,7 @@ Search: function () {
     var searchBroadcast = function (query) {
         if (typeof query == 'string')
             input.val(query);
-        Api('broadcastSearch', {
+        PeriscopeWrapper.V2_POST_Api('broadcastSearch', {
             search: input.val(),
             include_replay: $('#includeReplays')[0].checked
         }, refreshList(searchResults, '<h3>Search results for '+input.val()+'</h3>'));
@@ -858,36 +821,12 @@ Search: function () {
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
     var authorization_token;
 
-    function ApiChannels(callback, cid) {
-        Progress.start();
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: 'https://channels.periscope.tv/v1/channels' + (cid ? '/' + cid + '/broadcasts' : ''),
-            headers: {
-                Authorization: authorization_token,
-                /* drkchange show all channels*/ 'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
-                locale: langDt.find('.lang').val()
-            },
-            onload: function (r) {
-                Progress.stop();
-                if (r.status == 200) {
-                    var response = JSON.parse(r.responseText);
-                    if ($('#debug')[0].checked)
-                        console.log('channels' + (cid ? ' cid ' + cid : '') + ': ', response);
-                    callback(response);
-                }
-                else
-                    console.log('channels error: ' + r.status + ' ' + r.responseText);
-            }
-        });
-    }
-
     function RefreshChannels() {
-        Api('authorizeToken', {
+        PeriscopeWrapper.V2_POST_Api('authorizeToken', {
             service: 'channels'
         }, function (authorizeToken) {
             authorization_token = authorizeToken.authorization_token;
-            ApiChannels(function (response) {
+            PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
                 channels.empty();
                 for (var i in response.Channels) {
                     var channel = response.Channels[i];
@@ -898,7 +837,7 @@ Search: function () {
                             var ids = [];
                             for (var i in chan.Broadcasts)
                                 ids.push(chan.Broadcasts[i].BID);
-                            Api('getBroadcasts', {
+                            PeriscopeWrapper.V2_POST_Api('getBroadcasts', {
                                 broadcast_ids: ids,
                                 only_public_publish: true
                             }, refreshList(searchResults, '<h3>' + channelName + ', ' + chan.NLive + ' lives, ' + chan.NReplay + ' replays</h3>'));
@@ -927,7 +866,7 @@ Search: function () {
 /* drkchange18 */
 Following: function () {
     var result = $('<div/>');
-    var button = $('<a class="button" id="refreshFollowing">Refresh</a>').click(Api.bind(null, 'followingBroadcastFeed', {}, refreshList(result /* drkchange00 */ , null, 'following')));
+    var button = $('<a class="button" id="refreshFollowing">Refresh</a>').click(PeriscopeWrapper.V2_POST_Api.bind(null, 'followingBroadcastFeed', {}, refreshList(result /* drkchange00 */ , null, 'following')));
 
     /* drkchange23 */var hideEnded = $('<label><input type="checkbox"' + (broadcastsCache.filters.hideEnded ? 'checked' : '') + '/> Hide non-live</label>').click(function (e) {
         $('#Following').find('.card').not('.RUNNING').not('.newHighlight');//cardsToHide
@@ -1035,7 +974,7 @@ Create: function () {
             widthInput.val(320);
         if (heightInput.val().trim() == '')
             heightInput.val(568);
-        Api('createBroadcast', {
+        PeriscopeWrapper.V2_POST_Api('createBroadcast', {
             lat: +$('#lat').val() || 0,
             lng: +$('#lon').val() || 0,
             //supports_psp_version: [1, 0, 0],
@@ -1043,7 +982,7 @@ Create: function () {
             width: +widthInput.val(),
             height: +heightInput.val()
         }, function (createInfo) {
-            Api('publishBroadcast', {
+            PeriscopeWrapper.V2_POST_Api('publishBroadcast', {
                 broadcast_id: createInfo.broadcast.id,
                 friend_chat: $('#friend_chat')[0].checked,
                 has_location: true,
@@ -1264,7 +1203,7 @@ Chat: function () {
         title.empty();
         historyDiv.empty();
          //Load user list
-        Api('getBroadcastViewers', {
+        PeriscopeWrapper.V2_POST_Api('getBroadcastViewers', {
             broadcast_id: broadcast_id.val().trim()
         }, function(viewers){
             userlist.empty();
@@ -1274,7 +1213,7 @@ Chat: function () {
                     userlistAdd(user);
                 }
         });
-        Api('accessChannel', {
+        PeriscopeWrapper.V2_POST_Api('accessChannel', {
             broadcast_id: broadcast_id.val().trim()
         }, function (broadcast) {
             var userLink = $('<a class="username">(@' + broadcast.broadcast.username + ')</a>').click(switchSection.bind(null, 'User', broadcast.broadcast.user_id));
@@ -1519,13 +1458,13 @@ User: function () {
         /* drkchange26 */name.startsWith('@') ? (name = name.slice('1',name.length)) : '';
         /* drkchange26 */var param = {user_id : id};
         /* drkchange26 */name ? param = {username : name} : '' ;
-        Api('user', param, function (response) {
+        PeriscopeWrapper.V2_POST_Api('user', param, function (response) {
             /* drkchange26 */id = response.user.id;
             /* drkchange26 */$('#user_id').val(id);
             resultUser.prepend(getUserDescription(response.user));
             FollowersSpoiler.append(' (' + response.user.n_followers + ')');
             FollowingSpoiler.append(' (' + response.user.n_following + ')');
-            Api('userBroadcasts', {
+            PeriscopeWrapper.V2_POST_Api('userBroadcasts', {
                 user_id: id,
                 all: true
             }, function (broadcasts) {
@@ -1537,7 +1476,7 @@ User: function () {
         var FollowersSpoiler = $('<div class="spoiler menu" data-spoiler-link="followers">Followers</div>').on("jq-spoiler-visible", function() {
             var followersDiv = $('#userFollowers');
             if (!followersDiv.html())
-                Api('followers', {
+                PeriscopeWrapper.V2_POST_Api('followers', {
                     user_id: id
                 }, function (followers) {
                     if (followers.length){
@@ -1552,7 +1491,7 @@ User: function () {
         var FollowingSpoiler = $('<div class="spoiler menu" data-spoiler-link="following">Following</div>').on("jq-spoiler-visible", function() {
             var followingDiv = $('#userFollowing');
             if (!followingDiv.html())
-                Api('following', {
+                PeriscopeWrapper.V2_POST_Api('following', {
                     user_id: id
                 }, function (following) {
                     if (following.length){
@@ -1571,7 +1510,7 @@ User: function () {
             var BlockedSpoiler = $('<div class="spoiler menu" data-spoiler-link="blocked">Blocked</div>').on("jq-spoiler-visible", function() {
                 var blockedDiv = $('#userBlocked');
                 if (!blockedDiv.html())
-                    Api('block/users', {}, function (blocked) {
+                    PeriscopeWrapper.V2_POST_Api('block/users', {}, function (blocked) {
                         if (blocked.length)
                             for (var i in blocked) {
                                 blocked[i].is_blocked = true;
@@ -1590,7 +1529,7 @@ User: function () {
 },
 People: function () {
     var refreshButton = $('<a class="button">Refresh</a>').click(function () {
-        Api('suggestedPeople', {
+        PeriscopeWrapper.V2_POST_Api('suggestedPeople', {
             languages: [$('#People .lang').val()]
         }, function (response) {
             var result = $('#resultPeople');
@@ -1603,7 +1542,7 @@ People: function () {
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
                 result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
-            Api('suggestedPeople', {}, function (response) {
+            PeriscopeWrapper.V2_POST_Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
                     for (var i in response.hearted)
@@ -1613,7 +1552,7 @@ People: function () {
         });
     });
     var searchPeople = function () {
-        Api('userSearch', {
+        PeriscopeWrapper.V2_POST_Api('userSearch', {
             search: $('#search').val()
         }, function (response) {
             var result = $('#resultPeople');
@@ -1625,7 +1564,7 @@ People: function () {
                     found_exact=true;
             }
             if (!found_exact)
-                Api('user', {
+                PeriscopeWrapper.V2_POST_Api('user', {
                     username: $('#search').val()
                 }, function (user) {
                     result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
@@ -1646,7 +1585,7 @@ Edit: function () {
     var button = $('<a class="button">Save</a>').click(function () {
         var uname = $('#uname').val();
         if (uname != loginTwitter.user.username) {
-            Api('verifyUsername', {
+            PeriscopeWrapper.V2_POST_Api('verifyUsername', {
                 username: uname,
                 display_name: loginTwitter.user.display_name
             }, function () {
@@ -1656,7 +1595,7 @@ Edit: function () {
         }
         var description = $('#description').val();
         if (description != loginTwitter.user.description)
-            Api('updateDescription', {
+            PeriscopeWrapper.V2_POST_Api('updateDescription', {
                 description: description
             }, function () {
                 loginTwitter.user.description = description;
@@ -1664,7 +1603,7 @@ Edit: function () {
             });
         var dname = $('#dname').val();
         if (dname != loginTwitter.user.display_name) {
-            Api('updateDisplayName', {
+            PeriscopeWrapper.V2_POST_Api('updateDisplayName', {
                 display_name: dname
             }, function () {
                 loginTwitter.user.display_name = dname;
@@ -1681,7 +1620,7 @@ Edit: function () {
 
     var settingsContainer = $('<div/>');
     var tempSettings;
-    Api('getSettings', {}, function (settingsResponse) {
+    PeriscopeWrapper.V2_POST_Api('getSettings', {}, function (settingsResponse) {
         loginTwitter.settings = settingsResponse;
         localStorage.setItem('loginTwitter', JSON.stringify(loginTwitter));
         tempSettings = settingsResponse;
@@ -1694,7 +1633,7 @@ Edit: function () {
         }
     });
     var buttonSettings = $('<a class="button">Save</a>').click(function () {
-        Api('setSettings', {
+        PeriscopeWrapper.V2_POST_Api('setSettings', {
             settings: tempSettings
         }, function (r) {
             if (r.success){
@@ -1902,24 +1841,24 @@ function addUserContextMenu(node, id, username) {
         ev.preventDefault();
         var contextmenu = $('<div class="contextmenu" style="top: ' + ev.pageY + 'px; left: ' + ev.pageX + 'px;"/>')
             .append($('<div>Follow</div>').click(function () {
-                Api('follow', {
+                PeriscopeWrapper.V2_POST_Api('follow', {
                     user_id: id
                 });
             }))
             .append($('<div>Unfollow</div>').click(function () {
-                Api('unfollow', {
+                PeriscopeWrapper.V2_POST_Api('unfollow', {
                     user_id: id
                 });
             }))
             .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
                     '<div data-clipboard-text="' + id + '">Copy user ID</div>')
             .append($('<div>Block user</div>').click(function () {
-                Api('block/add', {
+                PeriscopeWrapper.V2_POST_Api('block/add', {
                     to: id
                 });
             }))
             .append($('<div>Unlock user</div>').click(function () {
-                Api('block/remove', {
+                PeriscopeWrapper.V2_POST_Api('block/remove', {
                     to: id
                 });
             }))
@@ -2149,7 +2088,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
             }));
 
             if (typeof response[0].n_watching == 'undefined')
-                Api('getBroadcasts', {
+                PeriscopeWrapper.V2_POST_Api('getBroadcasts', {
                     broadcast_ids: ids,
                     only_public_publish: true
                 }, function (info) {
@@ -2400,8 +2339,8 @@ function getURL(id, callback, /* drkchange14 */partialReplay){
     };
     /* drkchange14 */partialReplay ? ( ApiParameters.replay_redirect = false, ApiParameters.latest_replay_playlist = true) : '';
    (function a(ApiParameters){//private replays correctly attach to their card.
-        Api('accessVideoPublic', ApiParameters, getURLCallback, function(){
-            Api('accessChannel', ApiParameters, getURLCallback) // private video case
+        PeriscopeWrapper.V2_POST_Api('accessVideoPublic', ApiParameters, getURLCallback, function(){
+            PeriscopeWrapper.V2_POST_Api('accessChannel', ApiParameters, getURLCallback) // private video case
         });
     })(ApiParameters)
 }
@@ -2596,13 +2535,13 @@ function getDescription(stream) {
     }
     if (stream.user_id == loginTwitter.user.id)
         var deleteLink = $('<a class="delete right icon" title="Delete"/>').click(function () {
-            Api('deleteBroadcast', {broadcast_id: stream.id}, function (resp) {
+            PeriscopeWrapper.V2_POST_Api('deleteBroadcast', {broadcast_id: stream.id}, function (resp) {
                 if (resp.success)
                     description.parent().remove();
             });
         });
     var screenlistLink = $('<a class="screenlist right icon">Preview</a>').click(function () {
-        Api('replayThumbnailPlaylist', {
+        PeriscopeWrapper.V2_POST_Api('replayThumbnailPlaylist', {
             broadcast_id: stream.id
         }, function (thumbs) {
             loadScreenPreviewer(stream, thumbs);
@@ -2644,7 +2583,7 @@ function getUserDescription(user) {
     .append($('<a class="button' + (user.is_following ? ' activated' : '') + '">' + (user.is_following ? 'unfollow' : 'follow') + '</a>').click(function () {
         var el = this;
         /* drkchange03 */var selectButton=$(el).next().next()
-        Api(el.innerHTML, { // follow or unfollow
+        PeriscopeWrapper.V2_POST_Api(el.innerHTML, { // follow or unfollow
             user_id: user.id
         }, function (r) {
             if (r.success) {
@@ -2661,7 +2600,7 @@ function getUserDescription(user) {
     }))
     .append($('<a class="button">' + (user.is_blocked ? 'unblock' : 'block') + '</a>').click(function () {
         var el = this;
-        Api(el.innerHTML == 'block' ? 'block/add' : 'block/remove', {
+        PeriscopeWrapper.V2_POST_Api(el.innerHTML == 'block' ? 'block/add' : 'block/remove', {
             to: user.id
             }, function (r) {
                 if (r.success)
@@ -2808,57 +2747,8 @@ function clearXHR() {   // abort all running XHR requests
 }
 /* LEVEL 0 */
 var XHR = [];
-function Api(method, params, callback, callback_fail) {
-    ApiWorker('POST', default_api_root, method, default_headers, params, callback, callback_fail);
-}
-function ApiWorker(http_method, api_root, method, headers, params, callback, callback_fail) {
-        if (!params)
-        params = {};
-    if (loginTwitter && loginTwitter.cookie)
-        params.cookie = loginTwitter.cookie;
-    Progress.start();
-    var xhrIndex = XHR.length;
-    var req = GM_xmlhttpRequest({
-        method: http_method,
-        url: api_root + method,
-        headers: headers,
-        timeout: 10000,
-        data: JSON.stringify(params),
-        onload: function (r) {
-            Progress.stop();
-            XHR.splice(xhrIndex, 1);
-            var response, debug = $('#debug').length && $('#debug')[0].checked;
-            switch (r.status) {
-                case 200:
-                    try {
-                        response = JSON.parse(r.responseText);
-                    } catch (e) {
-                        if (debug)
-                            console.warn('JSON parse error:', e);
-                    }
-                    if (!!response && callback)
-                        callback(response);
-                    $(window).trigger('scroll');    // for lazy load
-                    break;
-                case 406:
-                    alert(JSON.parse(r.responseText).errors[0].error);
-                    break;
-                case 401:
-                    SignOut();
-                    break;
-                default:
-                    response = 'API error: ' + r.status + ' ' + r.responseText;
-                    if (callback_fail && Object.prototype.toString.call(callback_fail) === '[object Function]')
-                        callback_fail(response);
-            }
-            if (debug)
-                console.log('Method:', method, 'params:', params, 'response:', response);
-        }
-    });
-    XHR.push(req);
-}
 function SignIn3(session_key, session_secret) {
-    Api('loginTwitter', {
+    PeriscopeWrapper.V2_POST_Api('loginTwitter', {
         "session_key": session_key,
         "session_secret": session_secret
     }, function (response) {
@@ -2866,7 +2756,7 @@ function SignIn3(session_key, session_secret) {
         loginTwitter = response;
         Ready(loginTwitter);
         if (!loginTwitter.user.username)    // User registration
-            Api('verifyUsername', {
+            PeriscopeWrapper.V2_POST_Api('verifyUsername', {
                 username: loginTwitter.suggested_username,
                 display_name: loginTwitter.user.display_name
             }, function (verified) {
@@ -3045,7 +2935,7 @@ function SignInSessionID()
     setSet('session_cookie', $('#secret').val());
     if (settings.session_cookie)
     {
-        Api('user', { cookie: settings.session_cookie }, 
+        PeriscopeWrapper.V2_POST_Api('user', { cookie: settings.session_cookie }, 
             function (userResponse) 
             {
                 loginTwitter = localStorage.getItem('loginTwitter');
@@ -3057,7 +2947,7 @@ function SignInSessionID()
                 loginTwitter.user.profile_image_urls.sort(function (a, b) {
                     return a.width * a.height - b.width * b.height;
                 });
-                Api('getSettings', {}, 
+                PeriscopeWrapper.V2_POST_Api('getSettings', {}, 
                     function (settingsResponse) 
                     {
                         loginTwitter.settings = settingsResponse;
