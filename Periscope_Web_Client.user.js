@@ -28,7 +28,8 @@
 // @noframes
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
-// @resource    CSS style.css
+// @resource    CSS https://raw.githubusercontent.com/Max104t/My-OpenPeriscope/support-groups/style.css
+
 // ==/UserScript==
 
 var emoji = new EmojiConvertor();
