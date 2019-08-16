@@ -1802,8 +1802,9 @@ Edit: function () {
         /* drkchange change options order*/'<br/><hr color="#E0E0E0" size="1">' +
         '<h3 class="accordion">Periscope settings</h3>',
         $('<div class="panel"/>').append(settingsContainer, "<br/>", buttonSettings)
-    ));
-    setupAccordion();
+    )).ready(function() {
+        setTimeout( setupAccordion(), 100);
+    });
 },
 /* drkchange06 */Dmanager: function () {
     var result = $('<div/>');
