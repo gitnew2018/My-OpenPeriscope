@@ -1,5 +1,4 @@
-XmlhttpRequestMissing = typeof GM_xmlhttpRequest === 'undefined';
-if (XmlhttpRequestMissing) {  // for NW.js
+if (typeof GM_xmlhttpRequest === 'undefined') {  // for NW.js
     GM_xmlhttpRequest = function(options) {
         // re-implementation of GM_xmlhttpRequest for Node.js
         // platforms like NW.js
@@ -100,21 +99,28 @@ var PeriscopeWrapper = {
     },
     V1_GET_ApiChannels: function(callback, url, authorization_token, langDt) {
         Progress.start();
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: url,
-            headers: {
-                Authorization: authorization_token,
-                /* drkchange show all channels*/ 'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
-                locale: langDt.find('.lang').val()
-            },
-            onload: function (r) {
-                Progress.stop();
-                if (r.status == 200) {
-                    var response = JSON.parse(r.responseText);
-                    if ($('#debug')[0].checked)
-                        console.log('channels ' + url + ' : ', response);
-                    callback(response);
+        PeriscopeWrapper.V2_POST_Api('authorizeToken', {
+            service: 'channels'
+        }, function (authorizeToken) {
+            this.authorization_token = authorizeToken.authorization_token;
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: url,
+                headers: {
+                    Authorization: this.authorization_token,
+                    'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
+                    locale: (langDt ? langDt.find('.lang').val() : "")
+                },
+                onload: function (r) {
+                    Progress.stop();
+                    if (r.status == 200) {
+                        var response = JSON.parse(r.responseText);
+                        if ($('#debug')[0].checked)
+                            console.log('channels ' + url + ' : ', response);
+                        callback(response);
+                    }
+                    else
+                        console.log('channels error: ' + r.status + ' ' + r.responseText);
                 }
                 else
                     console.log('channels error: ' + r.status + ' ' + r.responseText);
