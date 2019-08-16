@@ -146,6 +146,33 @@ if (location.href == 'https://api.twitter.com/oauth/authorize') {
     });
 }
 
+function setupAccordion() { ///< call after creating accordion elements
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            /* Toggle between adding and removing the "active" class,
+            to highlight the button that controls the panel */
+            this.classList.toggle("open");
+
+            /* Toggle between hiding and showing the active panel */
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight){
+                panel.style.maxHeight = null;
+              } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+              }
+        });
+
+        // open already opened sections
+        if (acc[i].classList.contains("open")) {
+            var panel = acc[i].nextElementSibling;
+            panel.style.maxHeight = panel.scrollHeight + "px";
+        }
+    }
+}
+
 function getParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
@@ -1750,14 +1777,14 @@ Edit: function () {
     });
 
     $('#right').append($('<div id="Edit"/>').append(
-        '<h3>Profile edit</h3>',
-        '<dt>Display name:</dt><input id="dname" type="text" value="' + loginTwitter.user.display_name + '"><br/>' +
+        '<h3 class="accordion open">Profile edit</h3>',
+        $('<div class="panel"/>').append('<dt>Display name:</dt><input id="dname" type="text" value="' + loginTwitter.user.display_name + '"><br/>' +
         '<dt>Username:</dt><input id="uname" type="text" value="' + loginTwitter.user.username + '"><br/>' +
         '<dt>Description:</dt><input id="description" type="text" value="' + loginTwitter.user.description + '"><br/>' +
         '<dt>Avatar:</dt>', hiddenIframe, form, '<br/><br/>',
-        button, '<br><hr color="#E0E0E0" size="1">',
-        '<h3>My-OpenPeriscope settings</h3>',
-        notifications , '<br><br>',
+        button), '<br><hr color="#E0E0E0" size="1">',
+        '<h3 class="accordion">My-OpenPeriscope settings</h3>',
+        $('<div class="panel"/>').append(notifications , '<br><br>',
         autoDownload, '<br>',
         download_private, '<br>',
         download_following, '<br>',
@@ -1771,11 +1798,13 @@ Edit: function () {
         /* drkchange15 */'<br>', show_m3u_links,
         /* drkchange14 */'<br>', show_partial_links,
         /* drkchange16 */'<br>', show_nodeDown_links,
-        /* drkchange16 */'<br>', show_nodeDown_linksPrv,
+        /* drkchange16 */'<br>', show_nodeDown_linksPrv),
         /* drkchange change options order*/'<br/><hr color="#E0E0E0" size="1">' +
-        '<h3>Periscope settings</h3>',
-        settingsContainer, buttonSettings
-    ));
+        '<h3 class="accordion">Periscope settings</h3>',
+        $('<div class="panel"/>').append(settingsContainer, "<br/>", buttonSettings)
+    )).ready(function() {
+        setTimeout( setupAccordion(), 100);
+    });
 },
 /* drkchange06 */Dmanager: function () {
     var result = $('<div/>');
