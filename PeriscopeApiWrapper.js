@@ -91,13 +91,13 @@ function ApiWorker(
     });
     XHR.push(req);
 }
-
+var authorization_token;
 var PeriscopeWrapper = {
     default_api_root: 'https://api.periscope.tv/api/v2/',
     default_headers: {
         'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
     },
-    V1_GET_ApiChannels: function(callback, url, authorization_token, langDt) {
+    V1_GET_ApiChannels: function(callback, url, langDt) {
         Progress.start();
         PeriscopeWrapper.V2_POST_Api('authorizeToken', {
             service: 'channels'
