@@ -70,7 +70,9 @@ var GroupsController = {
                 var owner_id =  response.Channels[i].OwnerId;
                 channel_description
                     .append("<br/>Owner: ")
-                    .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)));
+                    .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)))
+                    .append("<br/>")
+                    .append($('<a class="button">leave</a>').click(function () { window.alert("Not yet implemented"); } ));
             }
             $('#GroupMembershipTitle')[0].innerText = response.Channels.length + " Group Memberships";
             defer.resolve();
