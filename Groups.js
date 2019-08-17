@@ -69,6 +69,8 @@ var GroupsController = {
                 channel_description = GroupsController.add_channel(channels, response.Channels[i]);
                 var owner_id =  response.Channels[i].OwnerId;
                 channel_description
+                    .append("<br/>Members: ")
+                    .append($('<a>' + response.Channels[i].NMember + '</a>').click(function () { window.alert("Not yet implemented"); }))
                     .append("<br/>Owner: ")
                     .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)))
                     .append("<br/>")
@@ -88,6 +90,8 @@ var GroupsController = {
                 var channel_description = GroupsController.add_channel(channels, response.ChannelsWithMembership[i].Channel);
                 var inviter_id = response.ChannelsWithMembership[i].Membership.Inviter;
                 channel_description
+                    .append("<br/>Members: ")
+                    .append($('<a>' + response.ChannelsWithMembership[i].Channel.NMember + '</a>').click(function () { window.alert("Not yet implemented"); }))
                     .append("<br/>Inviter: ")
                     .append($('<a>' + inviter_id + '</a>').click(switchSection.bind(null, 'User', inviter_id)))
                     .append("<br/>")
