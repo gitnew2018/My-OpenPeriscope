@@ -69,6 +69,12 @@ var GroupsController = {
         channels.empty();
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
+            if (!response.Channels)
+            {
+                defer.resolve();
+                return defer;
+            }
+            
             for (var i in response.Channels) {
                 channel_description = GroupsController.add_channel(channels, response.Channels[i]);
                 var channel_members_url = "https://channels.pscp.tv/v1/channels/" + response.Channels[i].CID + "/members/" + loginTwitter.user.id
@@ -102,6 +108,12 @@ var GroupsController = {
         channels.empty();
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/pending-invites';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
+            if (!response.ChannelsWithMembership)
+            {
+                defer.resolve();
+                return defer;
+            }
+
             for (var i in response.ChannelsWithMembership) {
                 var channel_description = GroupsController.add_channel(channels, response.ChannelsWithMembership[i].Channel);
                 var inviter_id = response.ChannelsWithMembership[i].Membership.Inviter;
