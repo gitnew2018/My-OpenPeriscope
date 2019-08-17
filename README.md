@@ -68,7 +68,7 @@ In userscript version, "Download" link is absent, so you can use downloaderNode 
 ## Known issues
 * Sometimes crashes when opening chat. - Probably can be solved by moving to newer version of NWJS
 * Autodownloading broadcasts of following users also downloads private broadcasts - not easy to fix, use `selected users broadcasts`
-* Some broadcasts are marked as deleted but are still running - This happens when periscope removes this broadcast from fowwlowing feeed
+* Some broadcasts are marked as deleted but are still running - This happens when periscope removes this broadcast from following feed
 * Sign in with twitter and with phone not working - first requires moving to newer version of NWJS and the second just doesn't work ;)
 
 If you notice any other bug please report.
