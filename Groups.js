@@ -24,34 +24,6 @@ var GroupsController = {
         }, refreshList($('#GroupBroadcasts'), '<h3>Search results for '+input.val()+'</h3>'));
     },
     add_channel: function (channels, channel) {
-        debugger;
-        /**
-         * hannel: Object
-            CID: "15103934351520804891"
-            CreatedAt: "2019-08-06T13:56:13.867854122Z"
-            Description: ""
-            Featured: false
-            LastActivity: "2019-08-16T23:39:46.934868125Z"
-            NLive: 2
-            NMember: 937
-            Name: "Sarah's shower group"
-            OwnerId: "1eVjYODXrJYQL"
-            PublicTag: ""
-            Slug: ""
-            ThumbnailURLs: Array[3]
-            0: Object
-            height: 128
-            ssl_url: "https://channel-thumbnails-live.pscp.tv/15103934351520804891/1565983414-UqkhzBJCo5AyRMilEJ3HjIDnUQI%3D-128x128.png"
-            url: "https://channel-thumbnails-live.pscp.tv/15103934351520804891/1565983414-UqkhzBJCo5AyRMilEJ3HjIDnUQI%3D-128x128.png"
-            width: 128
-            __proto__: Object
-            1: Object
-            2: Object
-            length: 3
-            __proto__: Array[0]
-            Type: 1
-            UniversalLocales: null
-         */
         channel.ThumbnailURLs.sort(function (a, b) {
             return a.width * a.height - b.width * b.height;
         });
@@ -69,23 +41,24 @@ var GroupsController = {
                 }, refreshList($('#GroupBroadcasts'), '<h3>' + channelName + ', ' + chan.NLive + ' lives, ' + chan.NReplay + ' replays</h3>'));
             };
         }(channel.Name), 'https://channels.periscope.tv/v1/channels/' + channel.CID + '/broadcasts', null));
-        channels
-            .append($('<div class="description"/>')
-                .append((
-                    channel.ThumbnailURLs.length ?
-                    '<a href="' + (
-                        /* drkchange10*/channel.ThumbnailURLs[0].url.includes("googleusercontent.com/") ?
-                        channel.ThumbnailURLs[0].url.replace("s96-c", "s0") :
-                        channel.ThumbnailURLs[channel.ThumbnailURLs.length - 1].url) + '" target="_blank"><img class="avatar" width="128" lazysrc="' + channel.ThumbnailURLs[0].url +
-                    '"></a>' :
-                    '<img class="avatar" width="128"/>'))
-                .append(
-                    '<div class="lives right icon" title="Lives / Replays">' + channel.NLive + ' / ' + channel.NReplay + '</div>',
-                    PublicChannel, (channel.Featured ? ' FEATURED<br>' : ''), '<br>',
-                    (channel.PublicTag ? ['Tags: ', Name, ', ', PublicTag, '<br>'] : ''),
-                    'Description: ' + channel.Description)
-            )
-            .append($('<p/><br/><br/><br/><br/><br/>')); // I'm not very good with CSS I guess we could format this as table!
+
+        channel_description = $('<div class="description"/>')
+            .append((
+                channel.ThumbnailURLs.length ?
+                '<a href="' + (
+                    /* drkchange10*/channel.ThumbnailURLs[0].url.includes("googleusercontent.com/") ?
+                    channel.ThumbnailURLs[0].url.replace("s96-c", "s0") :
+                    channel.ThumbnailURLs[channel.ThumbnailURLs.length - 1].url) + '" target="_blank"><img class="avatar" width="128" lazysrc="' + channel.ThumbnailURLs[0].url +
+                '"></a>' :
+                '<img class="avatar" width="128"/>'))
+            .append(
+                '<div class="lives right icon" title="Lives / Replays">' + channel.NLive + ' / ' + channel.NReplay + '</div>',
+                PublicChannel, (channel.Featured ? ' FEATURED<br>' : ''), '<br>',
+                (channel.PublicTag ? ['Tags: ', Name, ', ', PublicTag, '<br>'] : ''),
+                'Description: ' + channel.Description);
+            
+        channels.append(channel_description).append($('<p/><br/><br/><br/><br/><br/>')); // I'm not very good with CSS I guess we could format this as table!
+        return channel_description;
     },
     load_group_membership: function(channels, loginTwitter){
         defer = $.Deferred();
@@ -93,7 +66,11 @@ var GroupsController = {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
             for (var i in response.Channels) {
-                GroupsController.add_channel(channels, response.Channels[i]);
+                channel_description = GroupsController.add_channel(channels, response.Channels[i]);
+                var owner_id =  response.Channels[i].OwnerId;
+                channel_description
+                    .append("<br/>Owner: ")
+                    .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)));
             }
             $('#GroupMembershipTitle')[0].innerText = response.Channels.length + " Group Memberships";
             defer.resolve();
@@ -106,7 +83,14 @@ var GroupsController = {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/pending-invites';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
             for (var i in response.ChannelsWithMembership) {
-                GroupsController.add_channel(channels, response.ChannelsWithMembership[i].Channel);
+                var channel_description = GroupsController.add_channel(channels, response.ChannelsWithMembership[i].Channel);
+                var inviter_id = response.ChannelsWithMembership[i].Membership.Inviter;
+                channel_description
+                    .append("<br/>Inviter: ")
+                    .append($('<a>' + inviter_id + '</a>').click(switchSection.bind(null, 'User', inviter_id)))
+                    .append("<br/>")
+                    .append($('<a class="button">accept</a>').click(function () { window.alert("Not yet implemented"); } ))
+                    .append($('<a class="button">reject</a>').click(function () { window.alert("Not yet implemented"); } ))
             }
             $('#GroupInvitationsTitle')[0].innerText = response.ChannelsWithMembership.length + " Group Invitations";
             defer.resolve();
