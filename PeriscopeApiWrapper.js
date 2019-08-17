@@ -98,19 +98,23 @@ var PeriscopeWrapper = {
         'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
     },
     V1_GET_ApiChannels: function(callback, url, langDt) {
-        Progress.start();
+        return PeriscopeWrapper.V1_ApiChannels(callback, url, langDt, "", "GET");
+    },
+    V1_ApiChannels: function(callback, url, langDt, params, http_method) {
+            Progress.start();
         PeriscopeWrapper.V2_POST_Api('authorizeToken', {
             service: 'channels'
         }, function (authorizeToken) {
             this.authorization_token = authorizeToken.authorization_token;
             GM_xmlhttpRequest({
-                method: 'GET',
+                method: (http_method ? http_method : 'GET'),
                 url: url,
                 headers: {
                     Authorization: this.authorization_token,
                     'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
                     locale: (langDt ? langDt.find('.lang').val() : "")
                 },
+                data: (params? JSON.stringify(params) : ""),
                 onload: function (r) {
                     Progress.stop();
                     if (r.status == 200) {

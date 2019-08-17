@@ -1,6 +1,10 @@
 var GroupsController = {
+    caller_callback: null,
     init: function(parent, callback) {
-        var button = $('<a class="button" id="refreshGroups">Refresh</a>').click(GroupsController.load_groups_data.bind(null, callback));
+        this.caller_callback = callback;
+        var button = $('<a class="button" id="refreshGroups">Refresh</a>').click(
+            GroupsController.load_groups_data.bind(this, this.caller_callback)
+            );
         parent
             .append($('<div id="Groups"/>')
                 .append(button)
@@ -67,6 +71,7 @@ var GroupsController = {
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
             for (var i in response.Channels) {
                 channel_description = GroupsController.add_channel(channels, response.Channels[i]);
+                var channel_members_url = "https://channels.pscp.tv/v1/channels/" + response.Channels[i].CID + "/members/" + loginTwitter.user.id
                 var owner_id =  response.Channels[i].OwnerId;
                 channel_description
                     .append("<br/>Members: ")
@@ -74,7 +79,18 @@ var GroupsController = {
                     .append("<br/>Owner: ")
                     .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)))
                     .append("<br/>")
-                    .append($('<a class="button">leave</a>').click(function () { window.alert("Not yet implemented"); } ));
+                    .append($('<a class="button">leave</a>').click(function () { 
+                        if (confirm('Are you sure you want to leave the group "'+response.Channels[i].Name+'"?')) {
+                            PeriscopeWrapper.V1_ApiChannels(
+                                function (response) {
+                                    GroupsController.load_groups_data(GroupsController.caller_callback);
+                                }, 
+                                channel_members_url, 
+                                null, 
+                                null,
+                                "DELETE");                             
+                            }
+                     } ));
             }
             $('#GroupMembershipTitle')[0].innerText = response.Channels.length + " Group Memberships";
             defer.resolve();
@@ -89,14 +105,33 @@ var GroupsController = {
             for (var i in response.ChannelsWithMembership) {
                 var channel_description = GroupsController.add_channel(channels, response.ChannelsWithMembership[i].Channel);
                 var inviter_id = response.ChannelsWithMembership[i].Membership.Inviter;
+                var channel_members_url = "https://channels.pscp.tv/v1/channels/" + response.ChannelsWithMembership[i].Channel.CID + "/members/" + loginTwitter.user.id
                 channel_description
                     .append("<br/>Members: ")
                     .append($('<a>' + response.ChannelsWithMembership[i].Channel.NMember + '</a>').click(function () { window.alert("Not yet implemented"); }))
                     .append("<br/>Inviter: ")
                     .append($('<a>' + inviter_id + '</a>').click(switchSection.bind(null, 'User', inviter_id)))
                     .append("<br/>")
-                    .append($('<a class="button">accept</a>').click(function () { window.alert("Not yet implemented"); } ))
-                    .append($('<a class="button">reject</a>').click(function () { window.alert("Not yet implemented"); } ))
+                    .append($('<a class="button">accept</a>').click(function () { 
+                        PeriscopeWrapper.V1_ApiChannels(
+                            function (response) {
+                                GroupsController.load_groups_data(GroupsController.caller_callback);
+                            }, 
+                            channel_members_url, 
+                            null, 
+                            {"AcceptInvite":true},
+                            "PATCH");
+                     } ))
+                    .append($('<a class="button">reject</a>').click(function () { 
+                        PeriscopeWrapper.V1_ApiChannels(
+                            function (response) {
+                                GroupsController.load_groups_data(GroupsController.caller_callback);
+                            }, 
+                            channel_members_url, 
+                            null, 
+                            null,
+                            "DELETE");                        
+                     } ))
             }
             $('#GroupInvitationsTitle')[0].innerText = response.ChannelsWithMembership.length + " Group Invitations";
             defer.resolve();
