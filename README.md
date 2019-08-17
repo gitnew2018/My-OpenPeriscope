@@ -65,6 +65,14 @@ In userscript version, "Download" link is absent, so you can use downloaderNode 
 * Option to refresh following section on load, Thanks to Max104t
 * Option to open multiple preview windows, Thanks to Max104t
 
+## Known issues
+* Sometimes crashes when opening chat. - Probably can be solved by moving to newer version of NWJS
+* Autodownloading broadcasts of following users also downloads private broadcasts - not easy to fix, use `selected users broadcasts`
+* Some broadcasts are marked as deleted but are still running - This happens when periscope removes this broadcast from fowwlowing feeed
+* Sign in with twitter and with phone not working - first requires moving to newer version of NWJS and the second just doesn't work ;)
+
+If you notice any other bug please report.
+
 ### Donate to original autor
 Buy pmmlabs a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
 Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
