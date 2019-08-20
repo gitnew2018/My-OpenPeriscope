@@ -742,9 +742,7 @@ ApiTest: function () {
     ApiTestController.init($('#right'));
 },
 Groups: function (){
-    GroupsController.init($('#right'), function() {
-        setupAccordion();
-    });
+    GroupsController.init($('#right'), function() {});
 },
 Top: function () {
     var featured = $('<div/>');

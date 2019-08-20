@@ -122,8 +122,10 @@ var PeriscopeWrapper = {
                     Progress.stop();
                     if (r.status == 200) {
                         var response = JSON.parse(r.responseText);
-                        if ($('#debug')[0].checked)
+                        if ($('#debug')[0].checked){
                             console.log('channels ' + http_method + ' '  + url + ' : ', response);
+                            params ? console.log('params', params) : '';
+                        }
                         callback(response);
                     }
                     else
