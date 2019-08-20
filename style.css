@@ -827,24 +827,11 @@ fieldset.languageFilter {
     display: inline-table;
 }
 
-/* Style the buttons that are used to open and close the accordion panel */
-.accordion {
-    transition: 0.4s;
+.spoiler:before {
+    content: ' + \00a0\00a0';
 }
 
-/* Style the accordion panel. Note: hidden by default */
-.panel {
-    padding: 0 18px;
-    /* display: none; */
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.2s ease-out;
-}
-
-.accordion:before {
-    content: '[+]\00a0\00a0'; /* Unicode character for "plus" sign (+) */
-}
-
-.open:before {
-    content: "[-]\00a0\00a0"; /* Unicode character for "minus" sign (-) */
+.spoiler.spoiler-active:before {
+    font-weight: bold;
+    content: " -- \00a0\00a0";
 }
