@@ -294,7 +294,7 @@ var Notifications = {
                                 var date_start = new Date(new_list[i].start);
 
                                 fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' + '-LIVE- ' + (new_list[i].is_locked ? 'PRIVATE ' : '') + 'start@'
-                                + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + new_list[i].user_display_name + '** (@' + new_list[i].username + ')(**ID:** ' + new_list[i].id + ') **' + (new_list[i].status || 'Untitled') + ',** ' 
+                                + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + new_list[i].user_display_name + '** (@' + new_list[i].username + ')(**ID:** ' + new_list[i].id + ') **' + (new_list[i].status || 'Untitled') + ',** [' + new_list[i].language + '] '
                                 + (new_list[i].share_display_names ? ['*shared by:* ' + new_list[i].share_display_names[0]] : '') + (new_list[i].channel_name ? [' *on:* ' + new_list[i].channel_name] : '') + '\n'),
                                 'utf8',function () {}); //log broadcasts to .txt
                             }
@@ -308,8 +308,8 @@ var Notifications = {
                                         var savedLinks = broadcastsWithLinks[_broadcast_info.id];
 
                                         fs.appendFile(settings.downloadPath + '/' + 'Broadcasts_log.txt', ('* ' +  'REPLAY ' + (_broadcast_info.is_locked ? 'PRIVATE ' : '') + 'start@'
-                                        + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + _broadcast_info.user_display_name + '** (@' + _broadcast_info.username + ')(**ID:** ' + _broadcast_info.id + ') **' + (_broadcast_info.status || 'Untitled') + ',** ' 
-                                        +  ((savedLinks && savedLinks.hasOwnProperty('decryptKey'))? ('**KEY:** ' + savedLinks.decryptKey) : '') + '</br>' +'\n' + (replay ? (replay + '\n') : '')),
+                                        + zeros(date_start.getHours()) + ':' + zeros(date_start.getMinutes()) + ' **' + _broadcast_info.user_display_name + '** (@' + _broadcast_info.username + ')(**ID:** ' + _broadcast_info.id + ') **' + (_broadcast_info.status || 'Untitled') + ',** [' + _broadcast_info.language + '] '
+                                        +  ((savedLinks && savedLinks.hasOwnProperty('decryptKey'))? ('**KEY:** ' + savedLinks.decryptKey) : '') + '\n' + (replay ? (replay + '\n') : '')),
                                         'utf8',function () {}); //log replays to .txt 
                                     }
                                     ////////// log live broadcasts to a file end
