@@ -1428,7 +1428,7 @@ User: function () {
                     if (followers.length){
                         FollowersSpoiler.append(' (' + followers.length + ')');
                         for (var i in followers)
-                            followersDiv.append($('<div class="card"/>').append(getUserDescription(followers[i])));
+                            followersDiv.append($('<div class="cardprofileimg"/>').append(getUserDescription(followers[i])));
                         }
                     else
                         followersDiv.html('No results');
@@ -1443,7 +1443,7 @@ User: function () {
                     if (following.length){
                         FollowingSpoiler.append(' (' + following.length + ')');
                         for (var i in following)
-                            followingDiv.append($('<div class="card"/>').append(getUserDescription(following[i])));
+                            followingDiv.append($('<div class="cardprofileimg"/>').append(getUserDescription(following[i])));
                         }
                     else
                         followingDiv.html('No results');
@@ -1483,11 +1483,11 @@ People: function () {
             if (response.featured && response.featured.length) {
                 result.append('<h1>Featured</h1>');
                 for (var i in response.featured)
-                    result.append($('<div class="card"/>').append(getUserDescription(response.featured[i])));
+                    result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response.featured[i])));
             }
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
-                result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
+                result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response.popular[i])));
             PeriscopeWrapper.V2_POST_Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
@@ -1505,7 +1505,7 @@ People: function () {
             result.html('<h1>Search results</h1>');
             var found_exact = false;
             for (var i in response) {
-                result.append($('<div class="card"/>').append(getUserDescription(response[i])));
+                result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response[i])));
                 if (!found_exact && response[i].username.toUpperCase() == $('#search').val().toUpperCase())
                     found_exact=true;
             }
@@ -1513,7 +1513,7 @@ People: function () {
                 PeriscopeWrapper.V2_POST_Api('user', {
                     username: $('#search').val()
                 }, function (user) {
-                    result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
+                    result.prepend($('<div class="cardprofileimg"/>').append(getUserDescription(user.user)));
                 });
         });
     };
@@ -1896,7 +1896,7 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 if (refreshFrom != "userBroadcasts")
                     addUserContextMenu(stream, resp.user_id, resp.username);
 
-                var link = $('<a> Get stream link </a>');
+                var link = $('<a class="downloadGet"> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
                 var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothM3Us.bind(null, resp.id, stream));;
