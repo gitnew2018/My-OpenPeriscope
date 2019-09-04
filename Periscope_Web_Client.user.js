@@ -1749,9 +1749,10 @@ Console: function () {
         });
     });
     $('#right').append($('<div id="Console"/>').append('<dt>URL:</dt><input id="download_url" type="text" size="45"><br/>' +
+                                                       '<dt>R_URL:</dt><input id="download_replay_url" type="text" size="45"><br/>' +
                                                        '<dt>Cookies:</dt><input id="download_cookies" type="text" size="45"><br/>' +
                                                        '<dt>Name:</dt><input id="download_name" type="text" size="45"><br/>' +
-                                                       '<input id="download_replay_url" type="hidden">' +
+                                                       '<dt>Key:</dt><input id="download_key" type="text" size="45"><br/>' +
                                                        '<input id="download_userid" type="hidden">' +
                                                        '<input id="download_response" type="hidden">' +
                                                        '<input id="download_username" type="hidden">',
@@ -2334,10 +2335,12 @@ function download(name, url, rurl, cookies, user_id, user_name, broadcast_info, 
                 output_name_check(x);
             } else {
                 num ? name = name + num : '';
-                var decryptionKey;
+                var decryption_key;
                 if (broadcastsWithLinks[broadcast_info.id] && broadcastsWithLinks[broadcast_info.id].hasOwnProperty('decryptKey')){ // if broadcast has decryption key saved
-                    decryptionKey = broadcastsWithLinks[broadcast_info.id].decryptKey;
+                    decryption_key = broadcastsWithLinks[broadcast_info.id].decryptKey;
+                    $('#download_key').val(decryption_key);
                 }
+                
                 const spawn = require('child_process').spawn(process.execPath, [
                     'downloaderNode.js',
                     '-url', url,
@@ -2345,7 +2348,7 @@ function download(name, url, rurl, cookies, user_id, user_name, broadcast_info, 
                     '-dir', output_dir,
                     '-name', name,
                     '-cookies', cookies,
-                    '-key', decryptionKey
+                    '-key', decryption_key
                 ],{
                     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
                 });
