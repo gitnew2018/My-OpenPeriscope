@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.14
+// @version     0.1.15
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -266,19 +266,19 @@ var Notifications = {
                                 else if (settings.selectedDownload && selectedDownloadList.includes(new_list[i].user_id))
                                     downloadBroadcast = true;
                                 if (downloadBroadcast) {
-                                    getURL(new_list[i].id, function (live, replay, cookies, _name, _user_id, _user_name, _broadcast_info) {
+                                    getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
                                         if (live){
                                             var savedLinks = broadcastsWithLinks[_broadcast_info.id];
                                             (new_list[i].is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
-                                            download(_name, live, '', cookies, _user_id, _user_name, _broadcast_info);
+                                            download(_folder_name, _name, live, '', cookies, _broadcast_info);
                                         } else if (replay)
-                                            download(_name, '', replay, cookies, _user_id, _user_name, _broadcast_info);
+                                            download(_folder_name, _name, '', replay, cookies, _broadcast_info);
                                     });
                                 }
                             }
                             //save decryption key 
                             if (!downloadBroadcast){//no need to duplicate requests for key when it's auto downloading broadcast
-                                getURL(new_list[i].id, function (live, replay, cookies, _name, _user_id, _user_name, _broadcast_info) {
+                            getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
                                     var savedLinks = broadcastsWithLinks[_broadcast_info.id];
                                     if(_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)){
                                         live ? '' : live = replay;
@@ -300,7 +300,7 @@ var Notifications = {
                             }
 
                             if(new_list[i].state === 'ENDED' || new_list[i].state === 'TIMED_OUT' || repeatInteresting){
-                                getReplayUrl = function (live, replay, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
+                                getReplayUrl = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
                                     // log ended broadcasts to a file
                                     if(NODEJS && settings.logToFile && !_partial_replay && !repeatInteresting){
                                         const fs = require('fs');
@@ -329,7 +329,7 @@ var Notifications = {
                                                 var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + ( _broadcast_info.is_locked ? (' ' + '&quot;' + cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2">' + (_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
                                                 new ClipboardJS(clipboardDowLink.get(0));
 
-                                                var downloadLink = $('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: '', rurl: replay, cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name, broadcast_info: _broadcast_info}));
+                                                var downloadLink = $('<a class="'+ (_partial_replay ? 'linkPartialReplay':'linkReplay') + ' button2" title="Download replay">▼</a>').click(switchSection.bind(null, 'Console', {url: '', rurl: replay, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info}));
                                                 var refreshIndicator = $('<a> ◄</>')
 
                                                 setTimeout(function(){refreshIndicator.hide()}, 2000);
@@ -444,8 +444,7 @@ function switchSection(section, param, popstate) {
                     rurl:'',
                     cookies: '',
                     name:'',
-                    user_id:'',
-                    user_name:'',
+                    folder_name:'',
                     broadcast_info:''
                 }, param);
                 if (($('#download_url').val() != param.url) || ($('#download_replay_url').val() != param.rurl)) {    // if it other video
@@ -453,8 +452,7 @@ function switchSection(section, param, popstate) {
                     $('#download_replay_url').val(param.rurl);
                     $('#download_cookies').val(param.cookies);
                     $('#download_name').val(param.name);
-                    $('#download_userid').val(param.user_id);
-                    $('#download_username').val(param.user_name);
+                    $('#download_folder_name').val(param.folder_name);
                     $('#download_response').val(JSON.stringify(param.broadcast_info));
                     $('#download').click();
                 }
@@ -1661,6 +1659,23 @@ Edit: function () {
         setSet('previewSeparateWindows', e.target.checked);
     });
 
+    var fileNameButton = $('<a class="button">Save</a>').click(function () {
+        setSet('userPartialShort', $('#partialShort').val());
+        setSet('userReplayShort', $('#replayShort').val());
+        setSet('userPrivateShort', $('#privateShort').val());
+        setSet('userProducerShort', $('#producerShort').val());
+        setSet('userFolderName', $('#folderName').val());
+        setSet('userFileName', $('#fileName').val());
+    });
+    var resetToDefault = $('<a class="button">Default</a>').click(function () {
+        $('#partialShort').val(DefaultFolderFileNames.partialShort);
+        $('#replayShort').val(DefaultFolderFileNames.replayShort);
+        $('#privateShort').val(DefaultFolderFileNames.privateShort);
+        $('#producerShort').val(DefaultFolderFileNames.producerShort);
+        $('#folderName').val(DefaultFolderFileNames.folderName);
+        $('#fileName').val(DefaultFolderFileNames.fileName);
+    });
+
     var ProfileEditSpoiler = $('<h3 class="spoiler menu"  data-spoiler-link="ProfileEdit">Profile edit</h3>');
     var ProfileEdit = $('<div class="spoiler-content" data-spoiler-link="ProfileEdit" id="ProfileEdit" />')
         .append('<dt>Display name:</dt><input id="dname" type="text" value="' + loginTwitter.user.display_name + '"><br/>' +
@@ -1688,6 +1703,19 @@ Edit: function () {
             '<br>', show_nodeDown_linksPrv
         );
 
+    var NamesEditorSpoiler = $('<h3 class="spoiler menu" data-spoiler-link="NamesEditor">Names editor</h3>');
+    var NamesEditor =  $('<div class="spoiler-content" data-spoiler-link="NamesEditor" id="NamesEditor" />')
+        .append(
+            '<p>${id}, ${language}, ${status}, ${user_display_name}, ${user_id}, ${username}, ${date_created}, +</p></br>' +
+            '<dt>${partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
+            '<dt>${replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
+            '<dt>${private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
+            '<dt>${producer}:</dt><input id="producerShort" type="text" value="' + (settings.userProducerShort || DefaultFolderFileNames.producerShort) + '"><br/>' +
+            '<dt>Folder name:</dt><textarea id="folderName">' + (settings.userFolderName || DefaultFolderFileNames.folderName) + '</textarea><br/>' +
+            '<dt>File name:</dt><textarea id="fileName">' + (settings.userFileName || DefaultFolderFileNames.fileName) + '</textarea><br/><br/>',
+            fileNameButton , resetToDefault
+        );
+
     var PeriSettingsSpoiler = $('<h3 class="spoiler menu"  data-spoiler-link="PeriSettings">Periscope settings</h3>');
     var PeriSettings = $('<div class="spoiler-content" data-spoiler-link="PeriSettings" id="PeriSettings" />').append(settingsContainer, "<br/>", buttonSettings);
 
@@ -1695,6 +1723,7 @@ Edit: function () {
     $('#right').append($('<div id="Edit"/>').append(
         ProfileEditSpoiler,  ProfileEdit,
         MyOpSettingsSpoiler, MyOpSettings,
+        NamesEditorSpoiler, NamesEditor,
         PeriSettingsSpoiler, PeriSettings
     ));
     $(".spoiler").off("click").spoiler({ triggerEvents: true });
@@ -1716,13 +1745,13 @@ Dmanager: function () {
         var validLink = (dowLink.startsWith('https://www.periscope.tv/') || dowLink.startsWith('https://www.pscp.tv/'));
         if(validLink){
             var broadcast_id = dowLink.split('/')[4];
-            var urlCallback = function(live, replay, cookies, _name, _user_id, _user_name, _broadcast_info) {
+            var urlCallback = function(live, replay, cookies, _name, _folder_name, _broadcast_info) {
                 var live_url = $('#right > div:visible >div').find('#templiveUrl');
                 if(live){
                     live_url.val(live);
                     getURL(broadcast_id, urlCallback, true);
                 }else if(replay){
-                    download(_name, live_url.val(), replay, cookies, _user_id, _user_name, _broadcast_info);
+                    download(_folder_name, _name, live_url.val(), replay, cookies, _broadcast_info);
                     live_url.val(null);
                 }
             }
@@ -1738,7 +1767,7 @@ Console: function () {
     var resultConsole = $('<pre id="resultConsole" />');
     var downloadButton = $('<a class="button" id="download">Download</a>').click(function () {
         resultConsole.empty();
-        var dl = download($('#download_name').val().trim(), $('#download_url').val().trim(), $('#download_replay_url').val().trim(), $('#download_cookies').val().trim(), $('#download_userid').val().trim(), $('#download_username').val().trim(), JSON.parse($('#download_response').val().trim() || '""'), resultConsole);
+        var dl = download($('#download_folder_name').val().trim(), $('#download_name').val().trim(), $('#download_url').val().trim(), $('#download_replay_url').val().trim(), $('#download_cookies').val().trim(), JSON.parse($('#download_response').val().trim() || '""'), resultConsole);
         var gui = require('nw.gui');
         gui.Window.get().removeAllListeners('close').on('close', function(){
             try {
@@ -1752,10 +1781,9 @@ Console: function () {
                                                        '<dt>R_URL:</dt><input id="download_replay_url" type="text" size="45"><br/>' +
                                                        '<dt>Cookies:</dt><input id="download_cookies" type="text" size="45"><br/>' +
                                                        '<dt>Name:</dt><input id="download_name" type="text" size="45"><br/>' +
+                                                       '<dt>Folder:</dt><input id="download_folder_name" type="text" size="45"><br/>' +
                                                        '<dt>Key:</dt><input id="download_key" type="text" size="45"><br/>' +
-                                                       '<input id="download_userid" type="hidden">' +
-                                                       '<input id="download_response" type="hidden">' +
-                                                       '<input id="download_username" type="hidden">',
+                                                       '<input id="download_response" type="hidden">',
                                                         downloadButton, '<br/><br/>', resultConsole));
 }
 };
@@ -1772,6 +1800,8 @@ function cleanFilename(filename){
     var tmp = filename.replace(/[<>+\\/:"|?*]/g, '');
     if (tmp.length > 100)
         tmp = tmp.substring(0, 100);
+    if (tmp.endsWith('.'))
+        tmp = tmp.replace(/\.$/, '_')
     return tmp;
 }
 function zeros(number) {
@@ -2133,7 +2163,7 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){
     }
 }
 function getBothM3Us(id, jcontainer) {
-    var urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
+    var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         broadcastsCache.interestingList.indexOf(id) < 0 ? broadcastsCache.interestingList.push(id) : '';
         if(broadcastsCache.interestingList.length > 100){
             broadcastsCache.interestingList.shift();
@@ -2143,7 +2173,7 @@ function getBothM3Us(id, jcontainer) {
             live_url.val(hls_url);
             getURL(id, urlCallback, true);
         }else if(replay_url){
-            switchSection('Console', {url: live_url.val(), rurl: replay_url, cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name, broadcast_info: _broadcast_info});
+            switchSection('Console', {url: live_url.val(), rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
             live_url.val(null);
         }
     }
@@ -2158,7 +2188,7 @@ function getM3U(id, jcontainer) {
     if(broadcastsCache.interestingList.length > 100){
         broadcastsCache.interestingList.shift();
     }
-    var urlCallback = function (hls_url, replay_url, cookies, _name, _user_id, _user_name, _broadcast_info, _partial_replay) {
+    var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         !_partial_replay ? (liveLContainer.removeClass('oldLinks'), liveLContainer.children().length ? liveLContainer.empty() : '') : '';
         (_partial_replay || replay_url) ? (replayLContainer.removeClass('oldLinks'), replayLContainer.children().length ?  replayLContainer.empty() : '') : '';
 
@@ -2168,7 +2198,7 @@ function getM3U(id, jcontainer) {
             var clipboardLink = $('<a data-clipboard-text="' + hls_url + '" class="linkLive button2" title="Copy live broadcast URL">Copy URL</a>');
             var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( locked ? (' ' + '&quot;' + cookies + '&quot;') : '') + '" class="linkLive button2">NodeDown</a>');
             var downloadLink = $('<a class="linkLive button2" title="Record live broadcast">Record</a>')
-            .click(switchSection.bind(null, 'Console', {url: hls_url, rurl: '', cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name, broadcast_info: _broadcast_info}));
+            .click(switchSection.bind(null, 'Console', {url: hls_url, rurl: '', cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info}));
             liveLContainer.append(
                 settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', settings.showM3Ulinks ? ' | ' : '',
                 NODEJS ? [downloadLink, ' | ' ]: '',
@@ -2201,7 +2231,7 @@ function getM3U(id, jcontainer) {
                     var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + (_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
                     var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (locked ? (' ' + '&quot;' + cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + (_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
                     var downloadLink = $('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
-                        .click(switchSection.bind(null, 'Console', {url: '', rurl: replay_url, cookies: cookies, name: _name, user_id: _user_id, user_name: _user_name, broadcast_info: _broadcast_info}));
+                    .click(switchSection.bind(null, 'Console', {url: '', rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info}));
                     
                     replayLContainer.append(
                         settings.showM3Ulinks ? [link,  ' | '] : '',
@@ -2261,7 +2291,9 @@ function getURL(id, callback, partialReplay){
         var date_created = new Date(r.broadcast.start);
         var date_created_str = date_created.getFullYear() + '-' + zeros(date_created.getMonth() + 1) + '-' + zeros(date_created.getDate()) + '_' + zeros(date_created.getHours()) + '.' + zeros(date_created.getMinutes());
         var privateBroadacast = r.broadcast.is_locked === true;
-        var name = cleanFilename((privateBroadacast ? 'PV_':'') + (partialReplay ? 'P':'') + (r.replay_url ? 'R_':'') + date_created_str + '_' + r.broadcast.user_display_name + '_'+r.broadcast.status);
+        var producer = (r.broadcast_source === 'producer' || r.broadcast_source === 'livecms');
+        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, date_created_str, !!partialReplay, !!r.replay_url, producer);
+        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, date_created_str, !!partialReplay, !!r.replay_url, producer);
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
@@ -2269,7 +2301,7 @@ function getURL(id, callback, partialReplay){
         // For live
         var hls_url = r.hls_url || r.https_hls_url || r.lhls_url;
         if (hls_url) {
-            callback(hls_url, null, cookies, name, r.broadcast.user_id, r.broadcast.username, r.broadcast);
+            callback(hls_url, null, cookies, name, folder_name, r.broadcast);
         }
 
         // For replay
@@ -2282,7 +2314,7 @@ function getURL(id, callback, partialReplay){
 
         function ifReplay(replay_Url, cookies){
             if (replay_Url) {
-                callback(null, replay_Url, cookies, name, r.broadcast.user_id, r.broadcast.username, r.broadcast, partialReplay);
+                callback(null, replay_Url, cookies, name, folder_name, r.broadcast, partialReplay);
             }
         }
     };
@@ -2297,7 +2329,29 @@ function getURL(id, callback, partialReplay){
         });
     })(ApiParameters)
 }
-function download(name, url, rurl, cookies, user_id, user_name, broadcast_info, jcontainer) { // cookies=['key=val','key=val']
+
+DefaultFolderFileNames = {
+    partialShort: 'P',
+    replayShort: 'R_',
+    privateShort: 'PV_',
+    producerShort: 'PRO_',
+    folderName: '${user_id} (${username})',
+    fileName: '${private}${partial}${replay}${date_created}_${user_display_name}_${status}'
+}
+
+function userFolderFileName(userString, b_info, date_created, partialReplay, replay, producer){
+    b_info.date_created = date_created;
+    partialReplay ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
+    replay ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
+    b_info.is_locked ? (b_info.private = (settings.userPrivateShort || DefaultFolderFileNames.privateShort)) : '';
+    producer ?  (b_info.replay = (settings.userProducerShort || DefaultFolderFileNames.producerShort)) : '';
+
+    return userString.replace(/\${[a-z_]+}/gi, function(param){
+        return (b_info[param.slice(2,-1)] !== undefined) ? (param = b_info[param.slice(2,-1)]) : '';
+    });
+}
+
+function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontainer) { // cookies=['key=val','key=val']
     function _arrayBufferToString(buf, callback) {
         var bb = new Blob([new Uint8Array(buf)]);
         var f = new FileReader();
@@ -2312,13 +2366,15 @@ function download(name, url, rurl, cookies, user_id, user_name, broadcast_info, 
 
     var output_dir = settings.downloadPath + folder_separator
 
-    if (user_id && user_name)
-        output_dir += user_id + ' (' + user_name + ')' + folder_separator;
+    if (folder_name)
+        output_dir += cleanFilename(folder_name) + folder_separator;
 
     const fs = require('fs');
     try {
         fs.mkdirSync(output_dir);
     } catch (e) {}
+    
+    name = cleanFilename(name || 'untitled')
 
     output_name_check(0);
 

@@ -38,7 +38,6 @@ In userscript version, "Download" link is absent, so you can use downloaderNode 
 * Display full size avatars from google profiles
 * Dark theme (changes in style.css)
 * some other minor tweaks.
-* -----(added after 1 release)-----
 * Option to log broadcasts to text file with link to replay
 * Profile avatar and link in chat messages + some styling
 * Generate proper uuid for chat messages
@@ -64,6 +63,8 @@ In userscript version, "Download" link is absent, so you can use downloaderNode 
 * You can login with session ID, Thanks to kewalsk
 * Option to refresh following section on load, Thanks to Max104t
 * Option to open multiple preview windows, Thanks to Max104t
+* Basic support of groups and group invitations, Thanks to Max104t
+* Added file and folder names editor
 
 ## Known issues
 * App crashes when opening live broadcast in new window
