@@ -1,19 +1,19 @@
 {
-  "name": "openperiscope",
-  "version": "1.8.0",
-  "description": "Unofficial Periscope client",
+  "name": "my-openperiscope",
+  "version": "0.2.0",
+  "description": "Unofficial Periscope client, based on Pmmlabs/OpenPeriscope",
   "license": "GPL-2.0",
-  "repository": "Pmmlabs/OpenPeriscope",
+  "repository": "gitnew2018/My-OpenPeriscope",
   "dependencies": {
-    "ws": "1.1.1"
+    "ws": "*"
   },
-  "inject-js-end": "inject.js",
-  "main": "app://openperiscope/index.html",
+  "inject_js_end": "inject.js",
+  "main": "index.html",
   "webkit": {
     "plugin": true
   },
   "single-instance": false,
-  "chromium-args":"--data-path=userdata",
+  "chromium-args": "--user-data-dir=userdata",
   "window": {
     "icon": "images/openperiscope.png",
     "toolbar": true,
@@ -23,5 +23,9 @@
     "height": 500,
     "min_width": 550,
     "min_height": 200
-  }
+  },
+  "domain": "openperiscope",
+  "web_accessible_resources": [
+    "index.html"
+  ]
 }
