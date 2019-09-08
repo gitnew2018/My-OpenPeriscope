@@ -1706,7 +1706,7 @@ Edit: function () {
     var NamesEditorSpoiler = $('<h3 class="spoiler menu" data-spoiler-link="NamesEditor">Names editor</h3>');
     var NamesEditor =  $('<div class="spoiler-content" data-spoiler-link="NamesEditor" id="NamesEditor" />')
         .append(
-            '<p>${id}, ${language}, ${status}, ${user_display_name}, ${user_id}, ${username}, ${date_created}, +</p></br>' +
+            '<p>${id}, ${language}, ${status}, ${user_display_name}, ${user_id}, ${username}, ${year}, ${month}, ${day}, ${hour}, ${minute}, +</p></br>' +
             '<dt>${partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
             '<dt>${replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
             '<dt>${private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
@@ -2288,12 +2288,10 @@ function getM3U(id, jcontainer) {
  */
 function getURL(id, callback, partialReplay){
     var getURLCallback = function (r) {
-        var date_created = new Date(r.broadcast.start);
-        var date_created_str = date_created.getFullYear() + '-' + zeros(date_created.getMonth() + 1) + '-' + zeros(date_created.getDate()) + '_' + zeros(date_created.getHours()) + '.' + zeros(date_created.getMinutes());
         var privateBroadacast = r.broadcast.is_locked === true;
         var producer = (r.broadcast_source === 'producer' || r.broadcast_source === 'livecms');
-        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, date_created_str, !!partialReplay, !!r.replay_url, producer);
-        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, date_created_str, !!partialReplay, !!r.replay_url, producer);
+        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
+        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
@@ -2336,11 +2334,17 @@ DefaultFolderFileNames = {
     privateShort: 'PV_',
     producerShort: 'PRO_',
     folderName: '${user_id} (${username})',
-    fileName: '${private}${partial}${replay}${date_created}_${user_display_name}_${status}'
+    fileName: '${private}${partial}${replay}${year}-${month}-${day}_${hour}.${minute}_${user_display_name}_${status}'
 }
 
-function userFolderFileName(userString, b_info, date_created, partialReplay, replay, producer){
-    b_info.date_created = date_created;
+function userFolderFileName(userString, b_info, partialReplay, replay, producer){
+    var date_created = new Date(b_info.start);
+
+    b_info.year = date_created.getFullYear();
+    b_info.month = zeros(date_created.getMonth() + 1);
+    b_info.day = zeros(date_created.getDate());
+    b_info.hour = zeros(date_created.getHours());
+    b_info.minute = zeros(date_created.getMinutes());
     partialReplay ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
     replay ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
     b_info.is_locked ? (b_info.private = (settings.userPrivateShort || DefaultFolderFileNames.privateShort)) : '';
