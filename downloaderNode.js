@@ -56,7 +56,7 @@ process.on('uncaughtException', function (err) {
     }
 });
 
-g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = new Buffer(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
+g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
 g_m3u_url === ('null' || 'undefined') ? g_m3u_url = '' : '';
 g_replay_m3u_url === ('null' || 'undefined') ? g_replay_m3u_url = '' : '';
 (g_m3u_url && g_replay_m3u_url) ? g_download_Whole = true: '';
@@ -217,10 +217,9 @@ function getKey(keyURI, i) {
 }
 
 function decrypt(encryptedBuffer, chunk_name) {
-    var iv = new Buffer(g_chunkIvList[chunk_name], "hex");
+    var iv = Buffer.from(g_chunkIvList[chunk_name], "hex");
     var decrypt = crypto.createDecipheriv('aes-128-cbc', g_decryptionKey, iv);
-    var decryptedBuffer = Buffer.concat([decrypt.update(encryptedBuffer), decrypt.final()]);
-    return decryptedBuffer;
+    return Buffer.concat([decrypt.update(encryptedBuffer), decrypt.final()]);
 }
 
 function timeout_check(time, msg) {
