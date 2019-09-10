@@ -104,7 +104,7 @@ function get_playlist(urlLink) {
                 var m3uLines = m3u_response.split('\n');
 
                 var playlist_video_chunks = m3uLines.reduce(function (total, line) {
-                    !/(^#.+)/.test(line) ? total.push(line.split('?')[0]) : '';
+                    !/(^#.+|^\/.+)/.test(line) ? total.push(line.split('?')[0]) : '';
                     return total;
                 }, []);
 
