@@ -1622,7 +1622,7 @@ Edit: function () {
             setSet('selectedDownload', e.target.checked);
         });
         var current_download_path = $('<dt style="margin-right: 10px;">' + settings.downloadPath + '</dt>');
-        var download_path = $('<dt/>').append($('<input type="file" webkitdirectory directory/>').change(function () {
+        var download_path = $('<dt/>').append($('<input type="file" nwdirectory/>').change(function () {
             setSet('downloadPath', $(this).val());
             current_download_path.text($(this).val());
         }));
