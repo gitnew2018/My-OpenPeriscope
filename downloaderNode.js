@@ -20,6 +20,7 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
     g_fileName = process.argv[process.argv.indexOf('-name') + 1],
     g_cookies = process.argv[process.argv.indexOf('-cookies') + 1],
     g_savedDecryptionKey = process.argv[process.argv.indexOf('-key') + 1],
+    g_replay_limit = Number(process.argv[process.argv.indexOf('-limit') + 1]) || 0,
     g_live_stream = null,
     g_liveTimeout,
     g_timingOut = false,
@@ -48,12 +49,10 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
 
 //for debugging, this will keep process running after error, and log it to txt file
 process.on('uncaughtException', function (err) {
-    if (err.code !== 'ECONNRESET'){
         fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '_ERR.txt', ('uncaughtException:::'+JSON.stringify(err, null, 2) + '\n'), 'utf8', function () {});
         setTimeout(function() {
             process.exit();//remove this to keep it running
         }, 1000);
-    }
 });
 
 g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
@@ -88,7 +87,7 @@ function request_options(requestUrl, meth) {
 
 function get_playlist(urlLink) {
     var options = request_options(urlLink);
-    https.get(options, function (res) {
+    var request = https.get(options, function (res) {
         var responseParts = [];
         res.setEncoding('utf8');
         res.on('data', function (dataChunk) {
@@ -155,6 +154,18 @@ function get_playlist(urlLink) {
                     } else if (vod) { //VOD
                         g_download_Whole ? get_playlist(g_m3u_url) : '';
                         if (playlist_video_chunks.length) {
+                            if (g_replay_limit){
+                                var playlist_duration = Math.round(m3uLines.reduce(function (total, line) {
+                                    line.startsWith('#EXTINF:') ? total += Number(/\d+\.\d+/.exec(line)) : ''; 
+                                    return total;
+                                }, 0));
+                                
+                                if(playlist_duration > (g_replay_limit + 5)){
+                                    var averageChunkDuration = playlist_duration / playlist_video_chunks.length;
+                                    var limitedPlaylistLength = Math.round(g_replay_limit / averageChunkDuration);
+                                    playlist_video_chunks.splice(0, playlist_video_chunks.length - limitedPlaylistLength);
+                                }
+                            }
                             g_all_replay_chunks = playlist_video_chunks;
                             download_vod();
                         }
@@ -183,7 +194,8 @@ function get_playlist(urlLink) {
                 timeout_check(60, ('Warning playlist error, status code: ' + res.statusCode));
             }
         });
-    }).on('error', function (e) {
+    });
+    request.on('error', function (e) {
         process.send(e) //save to log
         if (g_m3u_url) {
             setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
@@ -270,7 +282,7 @@ function download_live(end) {
             var options = request_options(file_url);
             var dataParts = [];
 
-            https.get(options, function (res) {
+            var request = https.get(options, function (res) {
                 res.on('data', function (data) {
                     dataParts.push(data);
                 }).on('end', function () {
@@ -315,7 +327,8 @@ function download_live(end) {
                         }
                     }
                 });
-            }).on('error', function (e) {
+            });
+            request.on('error', function (e) {
                 process.send('Warning download file error: ' + e);
                 if (g_retries > 0) {
                     g_retries -= 1;
@@ -325,8 +338,6 @@ function download_live(end) {
                     process.send(e);
                     throw e;
                 }
-            }).setTimeout(20000, function () {
-                this.abort();
             });
         }
     }
@@ -357,7 +368,7 @@ function download_vod() {
             var options = request_options(file_url);
             var dataParts = [];
 
-            https.get(options, function (res) {
+            var request = https.get(options, function (res) {
                 res.on('data', function (data) {
                     dataParts.push(data);
                 }).on('end', function () {
@@ -406,7 +417,8 @@ function download_vod() {
                         }
                     }
                 });
-            }).on('error', function (e) {
+            });
+            request.on('error', function (e) {
                 process.send('Warning download file error: ' + e);
                 if (g_retries > 0) {
                     g_retries -= 1;
@@ -416,8 +428,6 @@ function download_vod() {
                     process.send(e);
                     throw e;
                 }
-            }).setTimeout(20000, function () {
-                this.abort();
             });
         }
     }

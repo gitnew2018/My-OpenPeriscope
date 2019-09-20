@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.15
+// @version     0.2.01
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -194,6 +194,7 @@ var Notifications = {
     notifs_available: null,
     old_list: null,
     default_interval: 15,
+    default_replay_limit: 3600,
     start: function () {
         if (!this.interval) {
             if (typeof this.notifs_available !== 'boolean') {
@@ -209,6 +210,8 @@ var Notifications = {
             this.old_list = JSON.parse(localStorage.getItem('followingBroadcastFeed')) || [];
             if (!settings.followingInterval)
                 setSet('followingInterval', this.default_interval);
+                if (!settings.replayTimeLimit)
+                setSet('replayTimeLimit', this.default_replay_limit);
             if (settings.followingNotifications || settings.automaticDownload)
                 this.interval = setInterval(PeriscopeWrapper.V2_POST_Api.bind(null, 'followingBroadcastFeed', {}, function (new_list) {
                     var getReplayUrl;
@@ -266,14 +269,30 @@ var Notifications = {
                                 else if (settings.selectedDownload && selectedDownloadList.includes(new_list[i].user_id))
                                     downloadBroadcast = true;
                                 if (downloadBroadcast) {
-                                    getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
-                                        if (live){
-                                            var savedLinks = broadcastsWithLinks[_broadcast_info.id];
-                                            (new_list[i].is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
-                                            download(_folder_name, _name, live, '', cookies, _broadcast_info);
-                                        } else if (replay)
-                                            download(_folder_name, _name, '', replay, cookies, _broadcast_info);
-                                    });
+                                    if(settings.replayTimeLimit > 2){
+                                        (function LiveAndReplay(liveUrl){
+                                            let urlCallback = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
+                                                if(live){
+                                                    let savedLinks = broadcastsWithLinks[_broadcast_info.id];
+                                                    (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
+                                                    liveUrl = live;
+                                                    getURL(_broadcast_info.id, urlCallback, true, true);
+                                                }else if(replay){
+                                                    download(_folder_name, _name, liveUrl, replay, cookies, _broadcast_info, null, true);
+                                                }
+                                            }
+                                            getURL(new_list[i].id, urlCallback);
+                                        })()// iife to keep live replay url
+                                    }else{
+                                        getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
+                                            if (live){
+                                                let savedLinks = broadcastsWithLinks[_broadcast_info.id];
+                                                (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
+                                                download(_folder_name, _name, live, '', cookies, _broadcast_info);
+                                            } else if (replay)
+                                                download(_folder_name, _name, '', replay, cookies, _broadcast_info);
+                                        });
+                                    }
                                 }
                             }
                             //save decryption key 
@@ -1139,7 +1158,7 @@ Chat: function () {
     var playButton = $('<a class="button" id="startchat">OK</a>').click(function () {
         clearInterval(chat_interval);
         if (NODEJS && ws && ws.readyState == ws.OPEN)
-            ws.pause(); // close() doesn't close :-/
+            ws.close();
         chat.empty();
         userlist.empty();
         title.empty();
@@ -1635,6 +1654,9 @@ Edit: function () {
         var log_broadcasts_to_file = $('<label><input type="checkbox" ' + (settings.logToFile ? 'checked' : '') + '/> Log broadcasts to a file</label>').click(function (e) {
             setSet('logToFile', e.target.checked);
         });
+        var replay_time_limit = $('<input type="number" min="2" value="' + (settings.replayTimeLimit || Notifications.default_replay_limit) + '">').change(function () {
+            setSet('replayTimeLimit', this.value);
+        });
     }
 
     if (!NODEJS) {
@@ -1692,8 +1714,9 @@ Edit: function () {
             download_following, '<br>',
             download_shared, '<br>',
             download_Selected, '<br><br>',
-            'Notifications refresh interval: ', notifications_interval ,' seconds','<br/><br/>',
-            (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br/><br/>'] : ''),
+            'Notifications refresh interval: ', notifications_interval ,' seconds','<br><br>',
+            'Limit replay for auto-download: ', replay_time_limit,' seconds','<br>',
+            (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br><br><br>'] : ''),
             '<br>', log_broadcasts_to_file,
             '<br>', update_thumbnails,
             '<br>', open_preview_in_separate_windows,
@@ -1706,11 +1729,11 @@ Edit: function () {
     var NamesEditorSpoiler = $('<h3 class="spoiler menu" data-spoiler-link="NamesEditor">Names editor</h3>');
     var NamesEditor =  $('<div class="spoiler-content" data-spoiler-link="NamesEditor" id="NamesEditor" />')
         .append(
-            '<p>${id}, ${language}, ${status}, ${user_display_name}, ${user_id}, ${username}, ${year}, ${month}, ${day}, ${hour}, ${minute}, +</p></br>' +
-            '<dt>${partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
-            '<dt>${replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
-            '<dt>${private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
-            '<dt>${producer}:</dt><input id="producerShort" type="text" value="' + (settings.userProducerShort || DefaultFolderFileNames.producerShort) + '"><br/>' +
+            '<p>#{id}, #{language}, #{status}, #{user_display_name}, #{user_id}, #{username}, #{year}, #{month}, #{day}, #{hour}, #{minute}</p></br>' +
+            '<dt>#{partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
+            '<dt>#{replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
+            '<dt>#{private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
+            '<dt>#{producer}:</dt><input id="producerShort" type="text" value="' + (settings.userProducerShort || DefaultFolderFileNames.producerShort) + '"><br/>' +
             '<dt>Folder name:</dt><textarea id="folderName">' + (settings.userFolderName || DefaultFolderFileNames.folderName) + '</textarea><br/>' +
             '<dt>File name:</dt><textarea id="fileName">' + (settings.userFileName || DefaultFolderFileNames.fileName) + '</textarea><br/><br/>',
             fileNameButton , resetToDefault
@@ -1799,7 +1822,7 @@ var MESSAGE_KIND = {
 function cleanFilename(filename){
     var tmp = filename.replace(/[<>+\\/:"|?*]/g, '');
     if (tmp.length > 100)
-        tmp = tmp.substring(0, 100);
+        tmp = tmp.substring(0, 98);
     if (tmp.endsWith('.'))
         tmp = tmp.replace(/\.$/, '_')
     return tmp;
@@ -1929,9 +1952,8 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 var link = $('<a> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
-                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothM3Us.bind(null, resp.id, stream));;
-                var tempLiveLink = $('<input class="liveUrl" type="hidden">');
-                var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, tempLiveLink, ' | ');
+                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id, stream));;
+                var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, ' | ');
 
                 if (refreshFrom === 'following' ){
                     var repeat_getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
@@ -2162,19 +2184,18 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){
         mainCallback? mainCallback():'';
     }
 }
-function getBothM3Us(id, jcontainer) {
+
+function getBothURLs(id, live_url) {
     var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         broadcastsCache.interestingList.indexOf(id) < 0 ? broadcastsCache.interestingList.push(id) : '';
         if(broadcastsCache.interestingList.length > 100){
             broadcastsCache.interestingList.shift();
         }
-        var live_url = jcontainer.find('.liveUrl');
         if(hls_url){
-            live_url.val(hls_url);
-            getURL(id, urlCallback, true);
+            live_url = hls_url;
+            getURL(id, urlCallback, true, true);
         }else if(replay_url){
-            switchSection('Console', {url: live_url.val(), rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
-            live_url.val(null);
+            switchSection('Console', {url: live_url, rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
         }
     }
     getURL(id, urlCallback);
@@ -2286,12 +2307,12 @@ function getM3U(id, jcontainer) {
  * @param {String} id - broadcast ID
  * @param {getURLCallback} callback - function applied against result
  */
-function getURL(id, callback, partialReplay){
+function getURL(id, callback, partialReplay, whole){
     var getURLCallback = function (r) {
         var privateBroadacast = r.broadcast.is_locked === true;
         var producer = (r.broadcast_source === 'producer' || r.broadcast_source === 'livecms');
-        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
-        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
+        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, partialReplay, !!r.replay_url, producer, whole);
+        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, partialReplay, !!r.replay_url, producer, whole);
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
@@ -2333,11 +2354,11 @@ DefaultFolderFileNames = {
     replayShort: 'R_',
     privateShort: 'PV_',
     producerShort: 'PRO_',
-    folderName: '${user_id} (${username})',
-    fileName: '${private}${partial}${replay}${year}-${month}-${day}_${hour}.${minute}_${user_display_name}_${status}'
+    folderName: '#{user_id} (#{username})',
+    fileName: '#{private}#{partial}#{replay}#{year}-#{month}-#{day}_#{hour}.#{minute}_#{user_display_name}_#{status}'
 }
 
-function userFolderFileName(userString, b_info, partialReplay, replay, producer){
+function userFolderFileName(userString, b_info, partialReplay, replay, producer, whole){
     var date_created = new Date(b_info.start);
 
     b_info.year = date_created.getFullYear();
@@ -2345,17 +2366,17 @@ function userFolderFileName(userString, b_info, partialReplay, replay, producer)
     b_info.day = zeros(date_created.getDate());
     b_info.hour = zeros(date_created.getHours());
     b_info.minute = zeros(date_created.getMinutes());
-    partialReplay ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
-    replay ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
+    (partialReplay && !whole) ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
+    (replay && !whole) ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
     b_info.is_locked ? (b_info.private = (settings.userPrivateShort || DefaultFolderFileNames.privateShort)) : '';
     producer ?  (b_info.replay = (settings.userProducerShort || DefaultFolderFileNames.producerShort)) : '';
 
-    return userString.replace(/\${[a-z_]+}/gi, function(param){
+    return userString.replace(/(\#|\$){[a-z_]+}/gi, function(param){
         return (b_info[param.slice(2,-1)] !== undefined) ? (param = b_info[param.slice(2,-1)]) : '';
     });
 }
 
-function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontainer) { // cookies=['key=val','key=val']
+function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontainer, replayLimit) { // cookies=['key=val','key=val']
     function _arrayBufferToString(buf, callback) {
         var bb = new Blob([new Uint8Array(buf)]);
         var f = new FileReader();
@@ -2388,11 +2409,9 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
         });
     }
     function output_name_check(num) {
-        var x = num;
         fs.stat(output_dir + name + (num ? num : '') + '.ts', function (err, stats) {
             if (stats || otherProcessHasName(name + (num ? num : ''))) {
-                x += 1;
-                output_name_check(x);
+                output_name_check(num + 1);
             } else {
                 num ? name = name + num : '';
                 var decryption_key;
@@ -2408,7 +2427,8 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                     '-dir', output_dir,
                     '-name', name,
                     '-cookies', cookies,
-                    '-key', decryption_key
+                    '-key', decryption_key,
+                    '-limit', replayLimit === true ? settings.replayTimeLimit : ''
                 ],{
                     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
                 });
