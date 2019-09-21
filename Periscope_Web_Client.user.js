@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.01
+// @version     0.2.02
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -17,6 +17,7 @@
 // @require     http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js
 // @require     http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js
 // @require     https://github.com/iamcal/js-emoji/raw/master/lib/emoji.js
+// @require     https://github.com/Dafrok/if-emoji/raw/master/index.js
 // @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Groups.js
@@ -150,7 +151,7 @@ function Ready(loginInfo) {
     selfAvatar = $('<img src="' + loginInfo.user.profile_image_urls[0].url + '" width="140"/>');
     var left = $('<div id="left"/>').append(signOutButton,
         selfAvatar, userEdit,
-        '<div>' + emoji.replace_unified(loginInfo.user.display_name) + '</div>', userLink);
+        '<div>' + emoji_to_img(loginInfo.user.display_name) + '</div>', userLink);
     $(document.body).html(left).append('<div id="right"/>', Progress.elem);
     var menu = [
         {text: 'API test', id: 'ApiTest'},
@@ -223,6 +224,7 @@ var Notifications = {
                         new_list_ids.push(new_list[i].id);
                         var repeatInteresting = broadcastsCache.autoGettinList.indexOf(new_list[i].id) >= 0;
                         cardsContainer.find('.card.' + new_list[i].id).removeClass('RUNNING').addClass(new_list[i].state);
+                        let liveUrl;
                         if (new_list[i].state === 'RUNNING' && settings.updateThumbnails){
                             var oldImage = cardsContainer.find('.card.' + new_list[i].id).find('.lastestImage img')[0];
                             oldImage ? oldImage.src ? oldImage.src = new_list[i].image_url_small : '' : '' ;
@@ -270,19 +272,17 @@ var Notifications = {
                                     downloadBroadcast = true;
                                 if (downloadBroadcast) {
                                     if(settings.replayTimeLimit > 2){
-                                        (function LiveAndReplay(liveUrl){
-                                            let urlCallback = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
-                                                if(live){
-                                                    let savedLinks = broadcastsWithLinks[_broadcast_info.id];
-                                                    (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
-                                                    liveUrl = live;
-                                                    getURL(_broadcast_info.id, urlCallback, true, true);
-                                                }else if(replay){
-                                                    download(_folder_name, _name, liveUrl, replay, cookies, _broadcast_info, null, true);
-                                                }
+                                        let urlCallback = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
+                                            if(live){
+                                                let savedLinks = broadcastsWithLinks[_broadcast_info.id];
+                                                (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
+                                                liveUrl = live;
+                                                getURL(_broadcast_info.id, urlCallback, true, true);
+                                            }else if(replay){
+                                                download(_folder_name, _name, liveUrl, replay, cookies, _broadcast_info, null, true);
                                             }
-                                            getURL(new_list[i].id, urlCallback);
-                                        })()// iife to keep live replay url
+                                        }
+                                        getURL(new_list[i].id, urlCallback);
                                     }else{
                                         getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
                                             if (live){
@@ -1001,7 +1001,7 @@ Chat: function () {
     function userlistAdd(user){
         var id = user.id || user.remoteID || user.user_id;
         if (!userlist.find('#'+id).length && (user.display_name || user.displayName)) {
-            var userCard = $('<div class="user" id="' + id + '">' + emoji.replace_unified(user.display_name || user.displayName) + ' </div>')
+            var userCard = $('<div class="user" id="' + id + '">' + emoji_to_img(user.display_name || user.displayName) + ' </div>')
                 .append($('<div class="username">(' + user.username + ')</div>')
                 .click(switchSection.bind(null, 'User', id)));
             addUserContextMenu(userCard, id, user.username);
@@ -1026,11 +1026,11 @@ Chat: function () {
             case 1:  // text message
                 var date = new Date((parseInt(event.ntpForLiveFrame.toString(16).substr(0, 8), 16) - 2208988800) * 1000);
                 if ($.isArray(container)) {   // for subtitles
-                    for (var i = 0; i < event.body.length; i++) // remove emoji surrogates
-                        if (String.fromCodePoint(event.body.codePointAt(i)).length == 2) {
-                            event.body = event.body.slice(0, i) + event.body.slice(i + 2);
-                            i--;
-                        }
+                    // for (var i = 0; i < event.body.length; i++) // remove emoji surrogates
+                    //     if (String.fromCodePoint(event.body.codePointAt(i)).length == 2) {
+                    //         event.body = event.body.slice(0, i) + event.body.slice(i + 2);
+                    //         i--;
+                    //     }
                     container.push({
                         date: date,
                         user: event.username,
@@ -1043,12 +1043,12 @@ Chat: function () {
                         $(this).next().children().first().toggleClass("hidename");
                     });
                     var messageTime = '<span class="messageTime">[' + zeros(date.getHours()) + ':' + zeros(date.getMinutes()) + ':' + zeros(date.getSeconds()) + '] </span>';
-                    var display_name = $('<span class="displayName hidename">' + (event.locale ? getFlag(event.locale) : '') + ' ' + emoji.replace_unified(event.display_name || event.displayName || ' ') + '</span>').click(switchSection.bind(null, 'User', event.user_id));
+                    var display_name = $('<span class="displayName hidename">' + (event.locale ? getFlag(event.locale) : '') + ' ' + emoji_to_img(event.display_name || event.displayName || ' ') + '</span>').click(switchSection.bind(null, 'User', event.user_id));
                     var username = $('<span class="user">&lt;' + event.username + '&gt;</span>').click(function () { // insert username to text field
                         textBox.val(textBox.val() + '@' + $(this).text().substr(1, $(this).text().length - 2) + ' ');
                         textBox.focus();
                     });
-                    var html = $('<div class="chatMessage"/>').append(display_name, ' ', username, ' ', messageTime, '</br>', '<span class="messageBody">'+ emoji.replace_unified($('<div/>').text(event.body).html()).replace(/(@\S+)/g, '<b>$1</b>')+'</span>');
+                    var html = $('<div class="chatMessage"/>').append(display_name, ' ', username, ' ', messageTime, '</br>', '<span class="messageBody">'+ emoji_to_img($('<div/>').text(event.body).html()).replace(/(@\S+)/g, '<b>$1</b>')+'</span>');
                     messageBox.append(profImage,html);
                     if (!event.body)    // for debug
                         console.log('empty body!', event);
@@ -1106,7 +1106,7 @@ Chat: function () {
                         text: '@' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + event.broadcasterBlockedMessageBody +'"'
                     });
                 else
-                container.append('<div class="service">*** @' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + emoji.replace_unified(event.broadcasterBlockedMessageBody) + '"</div>');
+                container.append('<div class="service">*** @' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + emoji_to_img(event.broadcasterBlockedMessageBody) + '"</div>');
                 break;
             case 13: //SUBSCRIBER_SHARED_ON_TWITTER
                 if (!$.isArray(container))
@@ -1205,8 +1205,8 @@ Chat: function () {
                         .get(0).click();
                 });
             });
-            title.html((broadcast.read_only?'Read-only | ':'') + '<a href="https://www.periscope.tv/w/' + broadcast.broadcast.id + '" target="_blank">' + emoji.replace_unified(broadcast.broadcast.status || 'Untitled') + '</a> | '
-                + emoji.replace_unified(broadcast.broadcast.user_display_name) + ' ')
+            title.html((broadcast.read_only?'Read-only | ':'') + '<a href="https://www.periscope.tv/w/' + broadcast.broadcast.id + '" target="_blank">' + emoji_to_img(broadcast.broadcast.status || 'Untitled') + '</a> | '
+                + emoji_to_img(broadcast.broadcast.user_display_name) + ' ')
                 .append(userLink,
                     broadcast.hls_url ? ' | <a href="' + broadcast.hls_url + '">M3U Link</a>' : '',
                     broadcast.replay_url ? ' | <a href="' + broadcast.replay_url + '">Replay Link</a>' : '',
@@ -1952,7 +1952,7 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 var link = $('<a> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
-                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id, stream));;
+                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
                 var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, ' | ');
 
                 if (refreshFrom === 'following' ){
@@ -2185,7 +2185,8 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){
     }
 }
 
-function getBothURLs(id, live_url) {
+function getBothURLs(id) {
+    var live_url;
     var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         broadcastsCache.interestingList.indexOf(id) < 0 ? broadcastsCache.interestingList.push(id) : '';
         if(broadcastsCache.interestingList.length > 100){
@@ -2501,8 +2502,10 @@ function saveAs(data, filename) {
     }
 }
 function getFlag(country) {
-    if (country === "en") country = "us";//no emoji flag for en :'(
-    if (country === "ar") country = "Arabic";//wrong emoji flag (argentina)
+    var a = ['en','zh','ar','uk','ja','kk','da','da','he','ko','nb','sv'];//language code
+    var b = ['gb','cn','sa','ua','jp','kz','dk','dk','il','kr','no','se'];//country flag code
+    var langIndex = a.indexOf(country);
+    (langIndex >= 0) ? country = b[langIndex] : '';
     var flagOffset = 127365;
     var both = String.fromCodePoint(country.codePointAt(0) + flagOffset) + String.fromCodePoint(country.codePointAt(1) + flagOffset);
     var output = emoji.replace_unified(both);
@@ -2550,7 +2553,7 @@ function loadScreenPreviewer(stream, thumbs) {
 
 }
 function getDescription(stream) {
-    var title = emoji.replace_unified(stream.status || 'Untitled');
+    var title = emoji_to_img(stream.status || 'Untitled');
     var featured_reason = '';
     if (stream.featured) {
         title += '<span class="featured" style="background: ' + (stream.featured_category_color || '#FFBD00') + '">' + (stream.featured_category || 'POPULAR') + '</span>';
@@ -2559,10 +2562,10 @@ function getDescription(stream) {
     }
     var date_created = new Date(stream.created_at);
     var duration = stream.end || stream.timedout ? new Date(new Date(stream.end || stream.timedout) - (new Date(stream.start))) : 0;
-    var userLink = $('<a class="username">' + emoji.replace_unified(stream.user_display_name) + ' (@' + stream.username + ')</a>');
+    var userLink = $('<a class="username">' + emoji_to_img(stream.user_display_name) + ' (@' + stream.username + ')</a>');
     userLink.click(switchSection.bind(null, 'User', stream.user_id));
     if (stream.share_display_names) {
-        var sharedByLink = $('<a class="sharedByUsername">'+ emoji.replace_unified(stream.share_display_names[0]) + '</a>')
+        var sharedByLink = $('<a class="sharedByUsername">'+ emoji_to_img(stream.share_display_names[0]) + '</a>')
             .click(switchSection.bind(null, 'User', stream.share_user_ids[0]));
     }
     if (stream.user_id == loginTwitter.user.id)
@@ -2579,6 +2582,7 @@ function getDescription(stream) {
             loadScreenPreviewer(stream, thumbs);
         });
     });
+
     var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
     + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': '')+'</a>').click(function () {
         var win = window.open("", "screen", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=600,top=100,left="+(screen.width/2));
@@ -2589,7 +2593,7 @@ function getDescription(stream) {
     <a target="_blank" href="https://www.periscope.tv/w/' + stream.id + '" class="broadcastTitle">' + title + '</a>'+featured_reason)
     var chatLink = $('<a class="chatlink right icon">Chat</a>').click(switchSection.bind(null, 'Chat', stream.id));
     var description = $('<div class="description"></div>')
-        .append(showImage, watchingTitle, deleteLink, '<br/>', screenlistLink, userLink, (sharedByLink ? [', shared by ', sharedByLink] : ''), (stream.channel_name ? ', on: ' + emoji.replace_unified(stream.channel_name) : ''), '<br/>', chatLink,
+        .append(showImage, watchingTitle, deleteLink, '<br/>', screenlistLink, userLink, (sharedByLink ? [', shared by ', sharedByLink] : ''), (stream.channel_name ? ', on: ' + emoji_to_img(stream.channel_name) : ''), '<br/>', chatLink,
             '<span class="date icon" title="Created">' + zeros(date_created.getDate()) + '.' + zeros(date_created.getMonth() + 1) + '.' + date_created.getFullYear() + ' ' + zeros(date_created.getHours()) + ':' + zeros(date_created.getMinutes()) + '</span>'
             + (duration ? '<span class="time icon" title="Duration">' + zeros(duration.getUTCHours()) + ':' + zeros(duration.getMinutes()) + ':' + zeros(duration.getSeconds()) + '</span>' : '')
             + (stream.friend_chat ? '<span class="friend_chat" title="Chat only for friends"/>' : '')
@@ -2609,9 +2613,9 @@ function getUserDescription(user) {
     + (user.n_hearts ? '<div class="hearts right icon" title="hearts">' + user.n_hearts + '</div>' : '')
     + (user.twitter_screen_name ? '<a class="twitterlink right icon" title="Profile on Twitter" target="_blank" href="https://twitter.com/' + user.twitter_screen_name + '"><svg viewBox="0 0 16 14" height="1em" version="1.2"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g transform="translate(-187.000000, -349.000000)" fill="#A4B8BE"><g transform="translate(187.000000, 349.000000)"><path d="M16,2.19685162 C15.4113025,2.4579292 14.7786532,2.63438042 14.1146348,2.71373958 C14.7924065,2.30746283 15.3128644,1.66416205 15.5579648,0.897667303 C14.9237353,1.27380396 14.2212078,1.5469961 13.4734994,1.69424362 C12.8746772,1.05626857 12.0215663,0.6576 11.0774498,0.6576 C9.26453784,0.6576 7.79475475,2.12732457 7.79475475,3.94011948 C7.79475475,4.19739297 7.8238414,4.44793615 7.87979078,4.68817903 C5.15161491,4.55129033 2.73285782,3.24443931 1.11383738,1.25847055 C0.83128132,1.74328711 0.669402685,2.30717021 0.669402685,2.90874306 C0.669402685,4.04757037 1.24897034,5.05231817 2.12976334,5.64095711 C1.591631,5.62392649 1.08551154,5.4762693 0.642891108,5.23040808 C0.64265701,5.2441028 0.64265701,5.25785604 0.64265701,5.27166782 C0.64265701,6.86212833 1.77416877,8.18887766 3.27584769,8.49039564 C3.00037309,8.56542399 2.71038443,8.60551324 2.41097333,8.60551324 C2.19946596,8.60551324 1.99381104,8.58497115 1.79342331,8.54663764 C2.21111233,9.85079653 3.42338783,10.7998291 4.85981199,10.8263406 C3.7363766,11.706724 2.32096273,12.2315127 0.783057171,12.2315127 C0.518116976,12.2315127 0.256805296,12.2160037 0,12.1856881 C1.45269395,13.1170462 3.17817038,13.6604458 5.0319324,13.6604458 C11.0697831,13.6604458 14.3714986,8.65853639 14.3714986,4.32076252 C14.3714986,4.17843105 14.3683383,4.0368604 14.3620176,3.89610909 C15.0033286,3.43329772 15.5598961,2.85513466 16,2.19685162" id="Fill-1" sketch:type="MSShapeGroup"></path></g></g></g></svg></a>' : '')
     + '<a class="periscopelink right icon" title="Profile on Periscope" target="_blank" href="https://periscope.tv/' + user.username + '"><svg version="1.1" height="1em" viewBox="0 0 113.583 145.426"><g><path fill="#A4B8BE" class="tofill" d="M113.583,56.791c0,42.229-45.414,88.635-56.791,88.635C45.416,145.426,0,99.02,0,56.791	C0,25.426,25.426,0,56.792,0C88.159,0,113.583,25.426,113.583,56.791z"/><path fill="#FFFFFF" d="M56.792,22.521c-2.731,0-5.384,0.327-7.931,0.928c4.619,2.265,7.807,6.998,7.807,12.489	c0,7.686-6.231,13.917-13.917,13.917c-7.399,0-13.433-5.779-13.874-13.067c-4.112,5.675-6.543,12.647-6.543,20.191	c0,19.031,15.427,34.458,34.458,34.458S91.25,76.01,91.25,56.979S75.823,22.521,56.792,22.521z"/></g></svg></a>')
-    .append($('<div class="username">' + verified_icon + emoji.replace_unified(user.display_name) + ' (@' + user.username + ')</div>').click(switchSection.bind(null, 'User', user.id)))
+    .append($('<div class="username">' + verified_icon + emoji_to_img(user.display_name) + ' (@' + user.username + ')</div>').click(switchSection.bind(null, 'User', user.id)))
     .append('Created: ' + (new Date(user.created_at)).toLocaleString()
-    + (user.description ? '<div class="userdescription">' + emoji.replace_unified(user.description) +'</div>': '<br/>'))
+    + (user.description ? '<div class="userdescription">' + emoji_to_img(user.description) +'</div>': '<br/>'))
     .append($('<a class="button' + (user.is_following ? ' activated' : '') + '">' + (user.is_following ? 'unfollow' : 'follow') + '</a>').click(function () {
         var el = this;
         var selectButton=$(el).next().next()
@@ -2676,18 +2680,15 @@ function dManagerDescription(jcontainer) {
                 var broadcastInfo = CProcess.b_info;
                 var filePath = CProcess.folder_path;
                 var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').on('error',function(){this.src = broadcastInfo.profile_image_url || '/images/default_avatar.png', $(this).addClass('avatar')});
-                var dManager_username = $('<span class="username">' + emoji.replace_unified(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
+                var dManager_username = $('<span class="username">' + emoji_to_img(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
                 
-                var brdcstTitle = $('<a class="b_title">' + emoji.replace_unified(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
+                var brdcstTitle = $('<a class="b_title">' + emoji_to_img(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
                     require('fs').stat(filePath, function (err, stats) {
                         if (err) {} else {
                             if (process.platform === 'win32') {
-                                require('child_process').exec('"' + filePath + CProcess.file_name + '.ts"', function (error, stdout, stderr) {
-                                    if (error != null) {}; //open video
-                                });
+                                require('child_process').exec('"' + filePath + CProcess.file_name + '.ts"', function () {}); //open video
                             } else {
-                                require('child_process').exec('xdg-open ' + "'" + filePath + CProcess.file_name + ".ts'", function (error, stdout, stderr) {});
-                                if (error != null) {}; //open video on linux
+                                require('child_process').exec('xdg-open ' + "'" + filePath + CProcess.file_name + ".ts'", function () {});//open video on linux
                             }
                         }
                     });
@@ -2696,7 +2697,8 @@ function dManagerDescription(jcontainer) {
                 var stopButton = $('<a class="button right">Stop</a>').click(function () {
                     try {
                         CProcess.stdin.end('q', CProcess.kill);
-                    } finally {
+                    }catch(e){}
+                    finally {
                         $(this).remove();
                     }
                 });
@@ -2765,6 +2767,13 @@ function dManagerDescription(jcontainer) {
     } else
         jcontainer.append('No results');
     return jcontainer;
+}
+function emoji_to_img(textInput){
+    if(ifEmoji('🐸')){
+        return textInput;
+    } else{
+        return emoji.replace_unified(textInput)// for browsers/systems without emojis support
+    }
 }
 function setSet(key, value) {
     settings[key] = value;
