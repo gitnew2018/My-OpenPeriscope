@@ -42,8 +42,8 @@ const NODEJS = typeof require === 'function';
 if (NODEJS) {  // for NW.js
     var gui = require('nw.gui');
     gui.App.addOriginAccessWhitelistEntry('https://api.twitter.com/', 'app', 'openperiscope', true);    // allow redirect to app://
-    const https = require('https');
-    const url = require('url');
+    https = require('https');
+    url = require('url');
     IMG_PATH = '';
     // Back & Forward hotkeys
     $(window).on('keydown', function (e) {
@@ -2583,12 +2583,13 @@ function getDescription(stream) {
         });
     });
 
-    var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
-    + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': '')+'</a>').click(function () {
+    var brdcstImage = $('<img lazysrc="' + stream.image_url_small + '"></img>').one('error',function(){this.src = stream.image_url});
+    var showImage = $('<a class="lastestImage"></a>').click(function () {
         var win = window.open("", "screen", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=600,top=100,left="+(screen.width/2));
         win.document.head.innerHTML = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
         win.document.body.innerHTML = '<img src="' + stream.image_url + '"/>';
-    });
+    }).append(brdcstImage, (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
+    + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': ''));
     var watchingTitle=('<div class="watching right icon" title="Watching">' + (stream.n_total_watching || stream.n_web_watching || stream.n_watching || stream.n_total_watched || 0) + '</div>\
     <a target="_blank" href="https://www.periscope.tv/w/' + stream.id + '" class="broadcastTitle">' + title + '</a>'+featured_reason)
     var chatLink = $('<a class="chatlink right icon">Chat</a>').click(switchSection.bind(null, 'Chat', stream.id));
@@ -2679,7 +2680,7 @@ function dManagerDescription(jcontainer) {
                 var CProcess = childProcesses[i];
                 var broadcastInfo = CProcess.b_info;
                 var filePath = CProcess.folder_path;
-                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').on('error',function(){this.src = broadcastInfo.profile_image_url || '/images/default_avatar.png', $(this).addClass('avatar')});
+                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').one('error',function(){this.src = broadcastInfo.profile_image_url || '/images/default_avatar.png', $(this).addClass('avatar'),console.log(this)});
                 var dManager_username = $('<span class="username">' + emoji_to_img(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
                 
                 var brdcstTitle = $('<a class="b_title">' + emoji_to_img(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {

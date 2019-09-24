@@ -148,8 +148,8 @@ input[type="text"]:focus, textarea:focus {
     cursor: pointer;
     display: inline-block;
     vertical-align: middle;
-    /* will-change: opacity, transform; */ /* blurry buttons */
-    /* transition: all 0.3s ease-out 0s; */
+    will-change: opacity, transform; /* blurry buttons */
+    transition: all 0.3s ease-out 0s;
     margin-right: 10px;
     height: 36px;
     overflow: hidden;
@@ -166,14 +166,14 @@ input[type="text"]:focus, textarea:focus {
     cursor: pointer;
     display: inline-block;
     vertical-align: middle;
-    /* transition: all 0.3s ease-out 0s; */
+    transition: all 0.3s ease-out 0s;
     overflow: hidden;
     border: solid 1px
 }
 
 .menu {
     cursor: pointer;
-    /* transition: all 0.25s ease 0s; */
+    transition: all 0.25s ease 0s;
     color: #7f99ea;
     line-height: 1.5rem;
     height: 1.5rem;
@@ -201,8 +201,8 @@ input[type="text"]:focus, textarea:focus {
     height: 2px;
     background: #77b7ff;
     box-shadow: 0 0 10px rgba(119, 183, 255, 0.7);
-    /* -webkit-transition: width 10s ease; */
-    /* transition: width 10s ease; */
+    -webkit-transition: width 10s ease;
+    transition: width 10s ease;
 }
 
 #left > img {
@@ -238,14 +238,14 @@ input#debug {
     box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
     overflow: auto;
     width: 200px;
-    /* transition: width 0.2s ease-out; */
+    transition: width 0.2s ease-out;
 }
 
 #right {
     width: auto;
     height: 95%;
     margin-left: 220px;
-    /* transition: margin-left 0.2s ease-out; */
+    transition: margin-left 0.2s ease-out;
 }
 
 .username, .leaflet-container a.username {
@@ -380,7 +380,7 @@ input#debug {
     background-position: center;
     padding: 7px 20px 7px 20px;
     border-radius: 5px;
-    /* transition: all 0.3s ease-out 0s; */
+    transition: all 0.3s ease-out 0s;
 }
 
 .edit:hover {
@@ -458,7 +458,7 @@ pre {
 #userlist {
     float: right;
     width: 250px;
-    /* transition: width 0.2s ease-out; */
+    transition: width 0.2s ease-out;
 }
 
 #chat {
@@ -851,4 +851,9 @@ fieldset.languageFilter {
 
 .groupName {
     font-size: 1.2em;
+}
+
+span.lang.right > span {
+    width: 2em;
+    height: 2em;
 }

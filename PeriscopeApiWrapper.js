@@ -2,8 +2,6 @@ if (typeof GM_xmlhttpRequest === 'undefined') {  // for NW.js
     GM_xmlhttpRequest = function(options) {
         // re-implementation of GM_xmlhttpRequest for Node.js
         // platforms like NW.js
-        const https = require('https');
-        const url = require('url');
         var onload = options.onload;
         options.onload = null;
         var u = url.parse(options.url);
