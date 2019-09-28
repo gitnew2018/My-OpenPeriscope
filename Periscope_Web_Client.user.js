@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.02
+// @version     0.2.03
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -224,7 +224,6 @@ var Notifications = {
                         new_list_ids.push(new_list[i].id);
                         var repeatInteresting = broadcastsCache.autoGettinList.indexOf(new_list[i].id) >= 0;
                         cardsContainer.find('.card.' + new_list[i].id).removeClass('RUNNING').addClass(new_list[i].state);
-                        let liveUrl;
                         if (new_list[i].state === 'RUNNING' && settings.updateThumbnails){
                             var oldImage = cardsContainer.find('.card.' + new_list[i].id).find('.lastestImage img')[0];
                             oldImage ? oldImage.src ? oldImage.src = new_list[i].image_url_small : '' : '' ;
@@ -272,6 +271,7 @@ var Notifications = {
                                     downloadBroadcast = true;
                                 if (downloadBroadcast) {
                                     if(settings.replayTimeLimit > 2){
+                                        let liveUrl;
                                         let urlCallback = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
                                             if(live){
                                                 let savedLinks = broadcastsWithLinks[_broadcast_info.id];
@@ -280,6 +280,8 @@ var Notifications = {
                                                 getURL(_broadcast_info.id, urlCallback, true, true);
                                             }else if(replay){
                                                 download(_folder_name, _name, liveUrl, replay, cookies, _broadcast_info, null, true);
+                                            }else if(live === null && replay === null && liveUrl){//when live just started and no partial replay available
+                                                download(_folder_name, _name, liveUrl, '', cookies, _broadcast_info);
                                             }
                                         }
                                         getURL(new_list[i].id, urlCallback);
@@ -355,7 +357,6 @@ var Notifications = {
                                                 var showDowLink = !NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && _broadcast_info.is_locked));
                                                 var card = cardsContainer.find('.card.' + _broadcast_info.id);
 
-                                                card.find('.downloadWholeContainer').empty();
                                                 card.find('.responseLinks').empty();
                                                 card.find('.responseLinksReplay').empty().append(
                                                     (NODEJS ? [downloadLink,' | '] : ''),clipboardLink, showDowLink ? [' | ', clipboardDowLink] : '', refreshIndicator
@@ -1953,7 +1954,6 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 link.click(getM3U.bind(null, resp.id, stream));
 
                 var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
-                var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, ' | ');
 
                 if (refreshFrom === 'following' ){
                     var repeat_getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
@@ -2013,7 +2013,7 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                     var addMethod = '';
                     refreshFrom === 'following' && !settings.classic_cards_order ? addMethod = 'prepend' : '';
                     refreshFrom !== 'following' || settings.classic_cards_order ? addMethod = 'append' : '';
-                    jcontainer[addMethod](stream.append(((NODEJS && !replayLinkExists)? downloadWholeContainer : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
+                    jcontainer[addMethod](stream.append(((NODEJS && !replayLinkExists)? [downloadWhole, ' | '] : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
                 }
 
             if (refreshFrom === 'following'){
@@ -2197,6 +2197,8 @@ function getBothURLs(id) {
             getURL(id, urlCallback, true, true);
         }else if(replay_url){
             switchSection('Console', {url: live_url, rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
+        }else if(hls_url === null && replay_url === null && liveUrl) { //when live just started and no partial replay available
+            switchSection('Console', {url: live_url, rurl: '', cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
         }
     }
     getURL(id, urlCallback);
@@ -2257,9 +2259,9 @@ function getM3U(id, jcontainer) {
                     
                     replayLContainer.append(
                         settings.showM3Ulinks ? [link,  ' | '] : '',
-                        NODEJS ? [downloadLink, ' | '] : '',
-                        clipboardLink,
-                        ((!NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+                        NODEJS ? [downloadLink.clone(true,true), ' | '] : '',
+                        clipboardLink.clone(),
+                        ((!NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && locked))) ? [' | ' ,clipboardDowLink.clone()] : ''), '<br/>'
                     );
                     new ClipboardJS(clipboardLink.get(0));
                     new ClipboardJS(clipboardDowLink.get(0));
@@ -2337,6 +2339,9 @@ function getURL(id, callback, partialReplay, whole){
                 callback(null, replay_Url, cookies, name, folder_name, r.broadcast, partialReplay);
             }
         }
+        //for no live no replay(when requested partial replay does not exist)
+        if(!hls_url && !replay_url)
+            callback(null, null, cookies, name, folder_name, r.broadcast);
     };
 
     var ApiParameters ={
@@ -2680,7 +2685,7 @@ function dManagerDescription(jcontainer) {
                 var CProcess = childProcesses[i];
                 var broadcastInfo = CProcess.b_info;
                 var filePath = CProcess.folder_path;
-                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').one('error',function(){this.src = broadcastInfo.profile_image_url || '/images/default_avatar.png', $(this).addClass('avatar'),console.log(this)});
+                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').one('error',function(){this.src = broadcastInfo.profile_image_url, $(this).addClass('avatar')});
                 var dManager_username = $('<span class="username">' + emoji_to_img(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
                 
                 var brdcstTitle = $('<a class="b_title">' + emoji_to_img(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
