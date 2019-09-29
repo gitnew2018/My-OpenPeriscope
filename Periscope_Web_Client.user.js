@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.03
+// @version     0.2.04
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -479,7 +479,7 @@ function switchSection(section, param, popstate) {
                 break;
         }
     if(section == 'Dmanager')
-        $('#' + section).remove(), Inits[section]();
+        $('#' + section).remove(), Inits[section](param ? param : '');
     document.title = section + ' - ' + 'My-OpenPeriscope';
     if (ScrollPositions.hasOwnProperty(section)) {
         window.scrollTo(0, ScrollPositions[section]);
@@ -1753,7 +1753,7 @@ Edit: function () {
     $(".spoiler").off("click").spoiler({ triggerEvents: true });
     MyOpSettingsSpoiler.click();
 },
-Dmanager: function () {
+Dmanager: function (go_to_bid) {
     var result = $('<div/>');
     var refreshButton =  $('<a class="button">Refresh</a>').click(function () {dManagerDescription(result)});
     var removefinished = $('<a class="button">Remove Finished</a>').click(function () {
@@ -1786,6 +1786,15 @@ Dmanager: function () {
     var linkInput = $('<div id="downloadFrom" title="Download from link"><input id="broadcastLink" type="text" size="15" placeholder="https://www.pscp.tv/w/...">' + '<input id="templiveUrl" type="hidden"></div>').append(goButton);
     $('#right').append($('<div id="Dmanager"/>').append(refreshButton, removefinished,'</br>', linkInput, result));
     refreshButton.click();
+
+    if(go_to_bid){
+        var dowCards = $('.downloadCard.' + go_to_bid );
+        setTimeout(function(){
+            document.documentElement.scrollTop = 0;
+            dowCards[0].scrollIntoView();
+            dowCards.addClass('focusedDownloadCard');
+        },0);
+    }
 },
 Console: function () {
     var resultConsole = $('<pre id="resultConsole" />');
@@ -1953,6 +1962,8 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 var link = $('<a> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
+                let recLink = downloadStatus(resp.id, true);
+
                 var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
 
                 if (refreshFrom === 'following' ){
@@ -1984,36 +1995,36 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                         rep ? replayLinkExists = brwlID.RdownloadLink.hasClass('linkReplay') : '';
 
                         if(liv && !replayLinkExists){
-                            var clipboardLink = brwlID.clipboardLink;
+                            var clipboardLink = brwlID.clipboardLink.clone();
                             new ClipboardJS(clipboardLink.get(0));
-                            var clipboardDowLink = brwlID.clipboardDowLink;
+                            var clipboardDowLink = brwlID.clipboardDowLink.clone();
                             new ClipboardJS(clipboardDowLink.get(0));
 
                             stream.find('.responseLinks').append(
                             (settings.showM3Ulinks && brwlID.m3uLink) ? [brwlID.m3uLink.clone(), ' | '] : '',
                                 NODEJS ? [brwlID.downloadLink.clone(true,true), ' | '] : '',
-                                clipboardLink.clone(),
-                                showDowLink ? [' | ', clipboardDowLink.clone()] : '', '<br/>'
+                                clipboardLink,
+                                showDowLink ? [' | ', clipboardDowLink] : '', '<br/>'
                             );
                         }
                         if(rep){
-                            var RclipboardLink = brwlID.RclipboardLink;
+                            var RclipboardLink = brwlID.RclipboardLink.clone();
                             new ClipboardJS(RclipboardLink.get(0));
-                            var RclipboardDowLink = brwlID.RclipboardDowLink;
+                            var RclipboardDowLink = brwlID.RclipboardDowLink.clone();
                             new ClipboardJS(RclipboardDowLink.get(0));
 
                             stream.find('.responseLinksReplay').append(
                             (settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U.clone(true,true), ' | '] : '',
                             (settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink.clone(true,true), ' | '] : ''),
-                             settings.showPRlinks ? RclipboardLink.clone() : '',
-                             showDowLink ? [' | ', RclipboardDowLink.clone()] : '', '<br/>'
+                             settings.showPRlinks ? RclipboardLink : '',
+                             showDowLink ? [' | ', RclipboardDowLink] : '', '<br/>'
                             );
                         }
                     }
                     var addMethod = '';
                     refreshFrom === 'following' && !settings.classic_cards_order ? addMethod = 'prepend' : '';
                     refreshFrom !== 'following' || settings.classic_cards_order ? addMethod = 'append' : '';
-                    jcontainer[addMethod](stream.append(((NODEJS && !replayLinkExists)? [downloadWhole, ' | '] : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
+                    jcontainer[addMethod](stream.append(recLink, ((NODEJS && !replayLinkExists)? [downloadWhole, ' | '] : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
                 }
 
             if (refreshFrom === 'following'){
@@ -2260,8 +2271,8 @@ function getM3U(id, jcontainer) {
                     replayLContainer.append(
                         settings.showM3Ulinks ? [link,  ' | '] : '',
                         NODEJS ? [downloadLink.clone(true,true), ' | '] : '',
-                        clipboardLink.clone(),
-                        ((!NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && locked))) ? [' | ' ,clipboardDowLink.clone()] : ''), '<br/>'
+                        clipboardLink,
+                        ((!NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
                     );
                     new ClipboardJS(clipboardLink.get(0));
                     new ClipboardJS(clipboardDowLink.get(0));
@@ -2725,8 +2736,9 @@ function dManagerDescription(jcontainer) {
                     });
                 });
 
+                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false));
                 var dManagerMessages = $('<div class="dManagerMessages">' + (CProcess.lastMessage ? CProcess.lastMessage : '') + '</div>');
-                var dManagerTimer = $('<div class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</div>');
+                var dManagerTimer = $('<span class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</span>');
                 CProcess.removeAllListeners('message', function () {}) //to avoid multiple listeners, +1 at each refresh
                 CProcess.on('message', function (msg) {
                     if (typeof msg === 'string') {
@@ -2748,13 +2760,13 @@ function dManagerDescription(jcontainer) {
                         CProcess.lastMessage = msg; //preserve last message from spawned process between refreshes
                     }
                 });
-                var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerTimer, dManagerMessages);
+                var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerExitStatus, dManagerTimer, dManagerMessages);
 
                 var errButton = $('<a class="button right errbutton">Show errors</a>').click(function () {
                     console.log(CProcess.errorsLog);
                 });
 
-                var downloadCard = $('<div class="card"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
+                var downloadCard = $('<div class="downloadCard ' + broadcastInfo.id + '"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
                     ((CProcess.errorsLog && debug) ? errButton : ''), brdcstImage, brdcstTitle, '<br/>', dManager_username, '<br/>', messagesContainer
                 ));
             
@@ -2773,6 +2785,35 @@ function dManagerDescription(jcontainer) {
     } else
         jcontainer.append('No results');
     return jcontainer;
+}
+function downloadStatus(broadcast_id, link){
+    function findChildProcessById(bid){
+        if (childProcesses.length){
+            return childProcesses.findIndex(function(cProcess, i) {
+                return cProcess.b_info.id == bid;
+            });
+        }
+    }
+
+    let processAt = findChildProcessById(broadcast_id);
+    if (processAt >= 0){
+        let title = 'Recording/Downloading';
+        let emote = '🔴';
+        let eCode = childProcesses[processAt].exitCode;
+        if (eCode === 0) title = 'Downloaded', emote = '✅';
+        if (eCode === 1) title = 'timeout', emote = '☑️';
+        if (eCode > 1) title = 'error', emote = '❌';
+        if(link){
+            let recLink = $('<a title="' + title + '" class="downloadStatus">' + emoji_to_img(emote) + '</a>').click(
+                switchSection.bind(null,'Dmanager', broadcast_id)
+            );
+            return recLink;
+        }else{
+            let exitEmote = '<span title="' + title + (eCode > 1 ? (' exit code:' + eCode): '') + '" class="downloadStatus">' + emoji_to_img(emote) +  '</span>';
+            return exitEmote;
+        }
+    };
+    return '';
 }
 function emoji_to_img(textInput){
     if(ifEmoji('🐸')){

@@ -49,10 +49,8 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
 
 //for debugging, this will keep process running after error, and log it to txt file
 process.on('uncaughtException', function (err) {
-        fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '_ERR.txt', ('uncaughtException:::'+JSON.stringify(err, null, 2) + '\n'), 'utf8', function () {});
-        setTimeout(function() {
-            process.exit();//remove this to keep it running
-        }, 1000);
+
+            process.exit(2);
 });
 
 g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
@@ -211,13 +209,13 @@ function getKey(keyURI, i) {
             });
         } else {
             process.send('Warning No access to decryption key, statusCode:' + res.statusCode);
-            process.exit();
+            process.exit(3);
         }
     }).on('error', function (e) {
         i += 1;
         process.send('Warning download Key error: ' + e);
         if (i === 2) {
-            process.exit();
+            process.exit(4);
         }
         getKey(keyURI, i)
     });
@@ -234,7 +232,7 @@ function timeout_check(time, msg) {
         var counter = 0;
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
-            endDownloading('Timeout', true);
+            endDownloading('Timeout', true, 1);
         }, time * 1000);
         g_timeoutInterval = setInterval(function () {
             counter++;
@@ -263,7 +261,7 @@ function download_live(end) {
             download_file_recur(i);
         }
     } else {
-        (g_nokey === 3) ? process.exit(): '';
+        (g_nokey === 3) ? process.exit(5): '';
         g_nokey += 1;
         setTimeout(download_live.bind(null, end), 1000); //if key not available try again after some time /async workaround
     }
@@ -271,7 +269,7 @@ function download_live(end) {
     function download_file_recur(i) {
         if (i === g_chunks_downloading.length) {
             g_chunks_downloading = [];
-            end ? endDownloading('End of broadcast', true) : '';
+            end ? endDownloading('End of broadcast', true, 0) : '';
         } else {
             var file_url = url.resolve(g_m3u_url, g_chunks_downloading[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
             var options = request_options(file_url);
@@ -343,7 +341,7 @@ function download_vod() {
         var i = 0;
         download_vod_recur(i);
     } else {
-        (g_nokey === 3) ? process.exit(): '';
+        (g_nokey === 3) ? process.exit(6): '';
         g_nokey += 1;
         setTimeout(download_vod, 1000); //if key not available try again after some time /async workaround
     }
@@ -351,9 +349,9 @@ function download_vod() {
     function download_vod_recur(i) {
         if (i === (g_all_replay_chunks.length - g_chunksNotAvailable)) {
             if (g_download_Whole) {
-                endDownloading((g_chunksNotAvailable ? 'Replay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false);
+                endDownloading((g_chunksNotAvailable ? 'Replay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false, 0);
             } else {
-                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false);
+                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false, 0);
             }
         } else {
             var progress = Math.round(((i + 1) / (g_all_replay_chunks.length - g_chunksNotAvailable)) * 100) + '%';
@@ -369,7 +367,7 @@ function download_vod() {
                 }).on('end', function () {
                     if (res.statusCode == 404) {
                         process.send('404')
-                        fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (file_url + ' <= was not found, Video is incomplete: ' + res.statusCode + '\n'), 'utf8', function () {});
+                        fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (file_url + ' <= was not found, Video is incomplete: ' + res.statusCode + '\n'), function () {});
                         g_chunksNotAvailable += 1;
                         i += 1;
                         download_vod_recur(i);
@@ -428,24 +426,28 @@ function download_vod() {
     }
 }
 
-function endDownloading(message, isLive) {
-    if (g_download_Whole) {
-        if (isLive) {
-            clearInterval(g_mainInterval);
-            clearInterval(g_timeoutInterval);
+function endDownloading(message, isLive, code) {
+    if(g_all_chunks.length || g_all_replay_chunks.length){
+        if (g_download_Whole) {
+            if (isLive) {
+                clearInterval(g_mainInterval);
+                clearInterval(g_timeoutInterval);
+                setTimeout(function () {
+                    process.send(message);
+                    process.exit(code)
+                }, 1000)
+            } else {
+                process.send(message);
+                g_vod_done = true;
+            }
+        } else {
             setTimeout(function () {
                 process.send(message);
-                process.exit()
+                process.exit(code)
             }, 1000)
-        } else {
-            process.send(message);
-            g_vod_done = true;
         }
-    } else {
-        setTimeout(function () {
-            process.send(message);
-            process.exit()
-        }, 1000)
+    }else{
+        process.exit(7)
     }
 }
 
