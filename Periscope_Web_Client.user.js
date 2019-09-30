@@ -129,7 +129,7 @@ function lazyLoad(parent) {
             right.find('img[lazysrc]:visible').each(function () {
                 var el = $(this);
                 var top = el.offset().top;
-                if (scrollTop < top + el.height() + 100 && scrollTop + windowHeight + 100 > top) {  // 100 is handicap
+                if (scrollTop < top + el.height() + 1400 && scrollTop + windowHeight + 1400 > top) {  // 100 is handicap
                     el.attr('src', el.attr('lazysrc'));
                     el.removeAttr('lazysrc');
                 }
@@ -734,13 +734,11 @@ Groups: function (){
     GroupsController.init($('#right'), function() {});
 },
 Top: function () {
-    var featured = $('<div/>');
     var ranked = $('<div/>');
     var langDt = $(languageSelect);
     langDt.find(":contains(" + (navigator.language || navigator.userLanguage || "en").substr(0, 2) + ")").attr("selected", "selected");
     var button = $('<a class="button" id="refreshTop">Refresh</a>').click(function () {
         PeriscopeWrapper.V2_POST_Api('rankedBroadcastFeed', {languages: (langDt.find('.lang').val() == 'all') ? ["ar","da","de","en","es","fi","fr","he","hy","id","it","ja","kk","ko","nb","pl","other","pt","ro","ru","sv","tr","uk","zh"] : [langDt.find('.lang').val()]}, refreshList(ranked, '<h3>Ranked</h3>'));
-        PeriscopeWrapper.V2_POST_Api('featuredBroadcastFeed', {}, refreshList(featured, '<h3>Featured</h3>'));
     });
 
     if (!settings.refreshTopOnLoad)
@@ -753,7 +751,7 @@ Top: function () {
 
     var refreshOnLoad = $('<label/>Refresh on load</label>').prepend(refreshOnLoadBtn);
 
-    var TopObj = $('<div id="Top"/>').append(langDt, button, refreshOnLoad, featured, ranked);
+    var TopObj = $('<div id="Top"/>').append(langDt, button, refreshOnLoad, ranked);
     $('#right').append(TopObj);
 
     button.click();
@@ -1446,7 +1444,7 @@ User: function () {
                     if (followers.length){
                         FollowersSpoiler.append(' (' + followers.length + ')');
                         for (var i in followers)
-                            followersDiv.append($('<div class="card"/>').append(getUserDescription(followers[i])));
+                            followersDiv.append($('<div class="cardprofileimg"/>').append(getUserDescription(followers[i])));
                         }
                     else
                         followersDiv.html('No results');
@@ -1461,7 +1459,7 @@ User: function () {
                     if (following.length){
                         FollowingSpoiler.append(' (' + following.length + ')');
                         for (var i in following)
-                            followingDiv.append($('<div class="card"/>').append(getUserDescription(following[i])));
+                            followingDiv.append($('<div class="cardprofileimg"/>').append(getUserDescription(following[i])));
                         }
                     else
                         followingDiv.html('No results');
@@ -1501,11 +1499,11 @@ People: function () {
             if (response.featured && response.featured.length) {
                 result.append('<h1>Featured</h1>');
                 for (var i in response.featured)
-                    result.append($('<div class="card"/>').append(getUserDescription(response.featured[i])));
+                    result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response.featured[i])));
             }
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
-                result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
+                result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response.popular[i])));
             PeriscopeWrapper.V2_POST_Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
@@ -1523,7 +1521,7 @@ People: function () {
             result.html('<h1>Search results</h1>');
             var found_exact = false;
             for (var i in response) {
-                result.append($('<div class="card"/>').append(getUserDescription(response[i])));
+                result.append($('<div class="cardprofileimg"/>').append(getUserDescription(response[i])));
                 if (!found_exact && response[i].username.toUpperCase() == $('#search').val().toUpperCase())
                     found_exact=true;
             }
@@ -1531,7 +1529,7 @@ People: function () {
                 PeriscopeWrapper.V2_POST_Api('user', {
                     username: $('#search').val()
                 }, function (user) {
-                    result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
+                    result.prepend($('<div class="cardprofileimg"/>').append(getUserDescription(user.user)));
                 });
         });
     };
@@ -1866,7 +1864,7 @@ function addUserContextMenu(node, id, username) {
                     user_id: id
                 });
             }))
-            .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
+            .append('<div data-clipboard-text="' + username + '">Copy username</div>' +
                     '<div data-clipboard-text="' + id + '">Copy user ID</div>')
             .append($('<div>Block user</div>').click(function () {
                 PeriscopeWrapper.V2_POST_Api('block/add', {
@@ -1959,7 +1957,7 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 if (refreshFrom != "userBroadcasts")
                     addUserContextMenu(stream, resp.user_id, resp.username);
 
-                var link = $('<a> Get stream link </a>');
+                var link = $('<a class="downloadGet"> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
                 let recLink = downloadStatus(resp.id, true);

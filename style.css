@@ -97,6 +97,28 @@ a, .edit {
     cursor: pointer;
 }
 
+a.broadcastTitle {
+    color: #039be5;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a.downloadGet {
+  display: inline-block;
+  color: #039be5;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.downloadWhole {
+  display: inline-block;
+  color: #039be5;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+
 input[type="text"], textarea {
     border: none;
     border-bottom: 1px solid rgba(127, 153, 234, 0.5);
@@ -410,7 +432,18 @@ pre {
 
 .card {
     font: 13px/1.3 "Helvetica Neue", Arial, Helvetica, sans-serif;
-    min-height: 128px;
+    min-height: 190px;
+    margin: 0.2rem 0 0.2rem 0;
+    background-color: #222222;
+    border-radius: 2px;
+    min-width: 350px;
+    border-left: 5px solid #222222;
+    padding-left: 5px;
+}
+
+.cardprofileimg {
+    font: 13px/1.3 "Helvetica Neue", Arial, Helvetica, sans-serif;
+    min-height: 135px;
     margin: 0.2rem 0 0.2rem 0;
     background-color: #222222;
     border-radius: 2px;
@@ -420,6 +453,11 @@ pre {
 }
 
 .card .description {
+    padding-top: 10px;
+    padding-right: 10px;
+}
+
+.cardprofileimg .description {
     padding-top: 10px;
     padding-right: 10px;
 }
@@ -440,9 +478,15 @@ pre {
 }
 
 .card img {
-    height: 128px;
+    height: 190px;
     margin-top: -10px;
-    min-width: 72px;
+    min-width: 107px;
+}
+
+.cardprofileimg img {
+	width: 135px;
+    height: 135px;
+	margin-top: -10px;
 }
 
 .links {
@@ -659,7 +703,8 @@ img.avatar {
 .contextmenu {
     position: absolute;
     padding: 0;
-    background: white;
+    background: #202020;
+	box-shadow: 0px 2px 20px -1px rgba(0,0,0,0.75);											
 }
 
 .contextmenu div {
@@ -699,11 +744,11 @@ img.avatar {
 }
 
 img.lock {
-    height: 14px;
-    width: 14px;
-    margin-left: -30px;
-    min-width: 14px;
-    margin-top: 100px;
+    height: 25px;
+    width: 22px;
+    margin-left: -33px;
+    min-width: 0px;
+    margin-top: 154px;
     border: none;
     -webkit-filter: drop-shadow(1px 1px 1px rgba(0,0,0,1));
     filter: drop-shadow(0px 1px 1px rgba(0,0,0,1));
@@ -781,10 +826,18 @@ span.sProducer {
 
 .linkLive {
     color:#ED4D4D;
+	text-decoration: none;
+	padding: .1em 0.4em;
+	border: 2px solid;
+    border-radius: 0px;				   
 }
 
 .linkReplay {
     color: white;
+	text-decoration: none;
+	padding: .1em 0.4em;
+	border: 2px solid;
+    border-radius: 0px;			   
     border-color: #4350E9
 }
 
@@ -860,13 +913,18 @@ span.lang.right > span {
 
 .downloadCard {
     font: 13px/1.3 "Helvetica Neue", Arial, Helvetica, sans-serif;
-    min-height: 128px;
+    min-height: 190px;
     margin: 0.2rem 0 0.2rem 0;
     background-color: #222222;
     border-radius: 2px;
     min-width: 350px;
-    border-left: 5px solid #222222;
-    padding-left: 5px;
+}
+.downloadCard img{
+    height: 190px;
+    margin-top: -10px;
+    min-width: 107px;
+}
+.downloadCard .description {
     padding-top: 10px;
     padding-right: 10px;
 }
