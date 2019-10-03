@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.04
+// @version     0.2.05
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -129,7 +129,7 @@ function lazyLoad(parent) {
             right.find('img[lazysrc]:visible').each(function () {
                 var el = $(this);
                 var top = el.offset().top;
-                if (scrollTop < top + el.height() + 100 && scrollTop + windowHeight + 100 > top) {  // 100 is handicap
+                if (scrollTop < top + el.height() + 800 && scrollTop + windowHeight + 800 > top) {  // 800 is handicap
                     el.attr('src', el.attr('lazysrc'));
                     el.removeAttr('lazysrc');
                 }
@@ -223,9 +223,11 @@ var Notifications = {
                         var stateChanged = false;
                         new_list_ids.push(new_list[i].id);
                         var repeatInteresting = broadcastsCache.autoGettinList.indexOf(new_list[i].id) >= 0;
-                        cardsContainer.find('.card.' + new_list[i].id).removeClass('RUNNING').addClass(new_list[i].state);
+                        var broadcastCard = cardsContainer.find('.card.' + new_list[i].id).not('.downloadCard, .cardProfileImg');
+                        broadcastCard.removeClass('RUNNING').addClass(new_list[i].state);
+
                         if (new_list[i].state === 'RUNNING' && settings.updateThumbnails){
-                            var oldImage = cardsContainer.find('.card.' + new_list[i].id).find('.lastestImage img')[0];
+                            var oldImage = broadcastCard.find('.lastestImage img')[0];
                             oldImage ? oldImage.src ? oldImage.src = new_list[i].image_url_small : '' : '' ;
                         }
                         for (var j in Notifications.old_list)
@@ -387,7 +389,7 @@ var Notifications = {
                     for (var m in broadcastsCache.idsQueue){//update state of deleted broadcasts
                         if(new_list_ids.indexOf(broadcastsCache.idsQueue[m]) < 0){
                             var bid = broadcastsCache.idsQueue[m];
-                            var card = cardsContainer.find( '.card.' + bid);
+                            var card = cardsContainer.find( '.card.' + bid).not('.downloadCard, .cardProfileImg');
                             if(!card.hasClass('deletedBroadcast')){
                                 card.removeClass('RUNNING').addClass('ENDED deletedBroadcast');
                             }
@@ -399,6 +401,10 @@ var Notifications = {
                         limitAddIDs(broadcastsCache, new_list[l].id, 100, new_list_ids);
                     }
 
+                    for (var n in broadcastsCache.idsQueue) {
+                        cardsContainer.find('.card.' + broadcastsCache.idsQueue[n]).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastsCache.idsQueue[n], true, null));
+                    }
+                    
                     Notifications.old_list = new_list;
                     localStorage.setItem('followingBroadcastFeed', JSON.stringify(Notifications.old_list));
                 }), (settings.followingInterval || this.default_interval) * 1000);
@@ -1446,7 +1452,7 @@ User: function () {
                     if (followers.length){
                         FollowersSpoiler.append(' (' + followers.length + ')');
                         for (var i in followers)
-                            followersDiv.append($('<div class="card"/>').append(getUserDescription(followers[i])));
+                            followersDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(followers[i])));
                         }
                     else
                         followersDiv.html('No results');
@@ -1461,7 +1467,7 @@ User: function () {
                     if (following.length){
                         FollowingSpoiler.append(' (' + following.length + ')');
                         for (var i in following)
-                            followingDiv.append($('<div class="card"/>').append(getUserDescription(following[i])));
+                            followingDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(following[i])));
                         }
                     else
                         followingDiv.html('No results');
@@ -1478,7 +1484,7 @@ User: function () {
                         if (blocked.length)
                             for (var i in blocked) {
                                 blocked[i].is_blocked = true;
-                                blockedDiv.append($('<div class="card"/>').append(getUserDescription(blocked[i])));
+                                blockedDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(blocked[i])));
                             }
                         else
                             blockedDiv.html('No results');
@@ -1501,16 +1507,16 @@ People: function () {
             if (response.featured && response.featured.length) {
                 result.append('<h1>Featured</h1>');
                 for (var i in response.featured)
-                    result.append($('<div class="card"/>').append(getUserDescription(response.featured[i])));
+                    result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.featured[i])));
             }
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
-                result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
+                result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.popular[i])));
             PeriscopeWrapper.V2_POST_Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
                     for (var i in response.hearted)
-                        result.append($('<div class="card"/>').append(getUserDescription(response.hearted[i])));
+                        result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.hearted[i])));
                 }
             });
         });
@@ -1523,7 +1529,7 @@ People: function () {
             result.html('<h1>Search results</h1>');
             var found_exact = false;
             for (var i in response) {
-                result.append($('<div class="card"/>').append(getUserDescription(response[i])));
+                result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response[i])));
                 if (!found_exact && response[i].username.toUpperCase() == $('#search').val().toUpperCase())
                     found_exact=true;
             }
@@ -1531,7 +1537,7 @@ People: function () {
                 PeriscopeWrapper.V2_POST_Api('user', {
                     username: $('#search').val()
                 }, function (user) {
-                    result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
+                    result.prepend($('<div class="card cardProfileImg"/>').append(getUserDescription(user.user)));
                 });
         });
     };
@@ -1791,7 +1797,7 @@ Dmanager: function (go_to_bid) {
         var dowCards = $('.downloadCard.' + go_to_bid );
         setTimeout(function(){
             document.documentElement.scrollTop = 0;
-            dowCards[0].scrollIntoView();
+            dowCards[0].scrollIntoView({behavior: 'smooth'});
             dowCards.addClass('focusedDownloadCard');
         },0);
     }
@@ -1867,6 +1873,7 @@ function addUserContextMenu(node, id, username) {
                 });
             }))
             .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
+                    '<div data-clipboard-text="' + username + '">Copy username</div>' +
                     '<div data-clipboard-text="' + id + '">Copy user ID</div>')
             .append($('<div>Block user</div>').click(function () {
                 PeriscopeWrapper.V2_POST_Api('block/add', {
@@ -1959,10 +1966,10 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 if (refreshFrom != "userBroadcasts")
                     addUserContextMenu(stream, resp.user_id, resp.username);
 
-                var link = $('<a> Get stream link </a>');
+                var link = $('<a class="downloadGet"> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
-                let recLink = downloadStatus(resp.id, true);
+                let recLink = $('<span class="recContainer"/>').append(downloadStatus(resp.id, true, null));
 
                 var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
 
@@ -2197,7 +2204,7 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){
 }
 
 function getBothURLs(id) {
-    var live_url;
+    var live_url = '';
     var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         broadcastsCache.interestingList.indexOf(id) < 0 ? broadcastsCache.interestingList.push(id) : '';
         if(broadcastsCache.interestingList.length > 100){
@@ -2457,6 +2464,7 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                 if(childProcesses.length > 50){
                     childProcesses.shift()
                 }
+                $(document).find('.card.' + broadcast_info.id).find('.recContainer').empty().append(downloadStatus(broadcast_info.id, true, null));
 
                 if (jcontainer) {
                     if (!spawn.pid)
@@ -2715,9 +2723,6 @@ function dManagerDescription(jcontainer) {
                     try {
                         CProcess.stdin.end('q', CProcess.kill);
                     }catch(e){}
-                    finally {
-                        $(this).remove();
-                    }
                 });
 
                 var openFolderButton = $('<a class="button right">folder</a>').click(function () {
@@ -2736,7 +2741,7 @@ function dManagerDescription(jcontainer) {
                     });
                 });
 
-                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false));
+                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false, i));
                 var dManagerMessages = $('<div class="dManagerMessages">' + (CProcess.lastMessage ? CProcess.lastMessage : '') + '</div>');
                 var dManagerTimer = $('<span class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</span>');
                 CProcess.removeAllListeners('message', function () {}) //to avoid multiple listeners, +1 at each refresh
@@ -2760,13 +2765,19 @@ function dManagerDescription(jcontainer) {
                         CProcess.lastMessage = msg; //preserve last message from spawned process between refreshes
                     }
                 });
+                let index = i;
+                CProcess.on('exit', function () {
+                        stopButton.remove();
+                        dManagerExitStatus.empty().append(downloadStatus(broadcastInfo.id, false, index));
+                        $(document).find('.card.' + broadcastInfo.id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastInfo.id, true, null));
+                });
                 var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerExitStatus, dManagerTimer, dManagerMessages);
 
                 var errButton = $('<a class="button right errbutton">Show errors</a>').click(function () {
                     console.log(CProcess.errorsLog);
                 });
 
-                var downloadCard = $('<div class="downloadCard ' + broadcastInfo.id + '"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
+                var downloadCard = $('<div class="card downloadCard ' + broadcastInfo.id + '"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
                     ((CProcess.errorsLog && debug) ? errButton : ''), brdcstImage, brdcstTitle, '<br/>', dManager_username, '<br/>', messagesContainer
                 ));
             
@@ -2786,35 +2797,30 @@ function dManagerDescription(jcontainer) {
         jcontainer.append('No results');
     return jcontainer;
 }
-function downloadStatus(broadcast_id, link){
-    function findChildProcessById(bid){
-        if (childProcesses.length){
-            return childProcesses.findIndex(function(cProcess, i) {
-                return cProcess.b_info.id == bid;
-            });
-        }
-    }
 
-    let processAt = findChildProcessById(broadcast_id);
-    if (processAt >= 0){
+function downloadStatus(broadcast_id, link, cpIndex){
+    if (cpIndex === null) cpIndex = childProcesses.findIndex(function(cProcess) {return cProcess.b_info.id == broadcast_id;});
+    if (cpIndex >= 0){
         let title = 'Recording/Downloading';
         let emote = '🔴';
-        let eCode = childProcesses[processAt].exitCode;
+        let eCode = childProcesses[cpIndex].exitCode;
+        if (link) {childProcesses.some(function(cProcess){ return (cProcess.b_info.id == broadcast_id && cProcess.exitCode === null)}) ? (eCode = null) : ''}; //if any process still downloading then show as downloading.
         if (eCode === 0) title = 'Downloaded', emote = '✅';
-        if (eCode === 1) title = 'timeout', emote = '☑️';
+        if (eCode === 1) title = 'Stopped', emote = '❎';
         if (eCode > 1) title = 'error', emote = '❌';
         if(link){
-            let recLink = $('<a title="' + title + '" class="downloadStatus">' + emoji_to_img(emote) + '</a>').click(
+            let recLink = [$('<a title="' + title + '" class="downloadStatus">' + emoji_to_img(emote) + '</a>').click(
                 switchSection.bind(null,'Dmanager', broadcast_id)
-            );
+            ), ' | '];
             return recLink;
         }else{
-            let exitEmote = '<span title="' + title + (eCode > 1 ? (' exit code:' + eCode): '') + '" class="downloadStatus">' + emoji_to_img(emote) +  '</span>';
+            let exitEmote = '<span title="' + title + (eCode > 1 ? (' exit code:' + eCode): '') + '" class="downloadStatus">' + emoji_to_img(emote) + '</span>';
             return exitEmote;
         }
     };
     return '';
 }
+
 function emoji_to_img(textInput){
     if(ifEmoji('🐸')){
         return textInput;

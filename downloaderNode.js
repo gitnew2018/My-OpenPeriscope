@@ -10,7 +10,7 @@ const fs = require('fs'),
 process.stdin.on('data', function (msg) {
     if (msg.toString() === 'q') {
         process.send('Stopped by User');
-        process.exit();
+        process.exit(1);
     }
 });
 
@@ -20,7 +20,7 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
     g_fileName = process.argv[process.argv.indexOf('-name') + 1],
     g_cookies = process.argv[process.argv.indexOf('-cookies') + 1],
     g_savedDecryptionKey = process.argv[process.argv.indexOf('-key') + 1],
-    g_replay_limit = Number(process.argv[process.argv.indexOf('-limit') + 1]) || 0,
+    g_replay_limit = Number(process.argv[process.argv.indexOf('-limit') + 1]),
     g_live_stream = null,
     g_liveTimeout,
     g_timingOut = false,
@@ -53,10 +53,10 @@ process.on('uncaughtException', function (err) {
             process.exit(2);
 });
 
-g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : g_decryptionKey = null;
-g_m3u_url === ('null' || 'undefined') ? g_m3u_url = '' : '';
-g_replay_m3u_url === ('null' || 'undefined') ? g_replay_m3u_url = '' : '';
-(g_m3u_url && g_replay_m3u_url) ? g_download_Whole = true: '';
+g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : (g_decryptionKey = null);
+if ((g_m3u_url == 'null') || (g_m3u_url == 'undefined')) g_m3u_url = '';
+if ((g_replay_m3u_url == 'null') || (g_replay_m3u_url == 'undefined')) g_replay_m3u_url = '';
+(g_m3u_url && g_replay_m3u_url) ? (g_download_Whole = true): '';
 
 if (g_download_Whole) {
     g_replay_m3u_url.includes('master_dynamic') ? '' : (g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000));
@@ -232,7 +232,7 @@ function timeout_check(time, msg) {
         var counter = 0;
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
-            endDownloading('Timeout', true, 1);
+            endDownloading('Timeout', true);
         }, time * 1000);
         g_timeoutInterval = setInterval(function () {
             counter++;
@@ -269,7 +269,7 @@ function download_live(end) {
     function download_file_recur(i) {
         if (i === g_chunks_downloading.length) {
             g_chunks_downloading = [];
-            end ? endDownloading('End of broadcast', true, 0) : '';
+            end ? endDownloading('End of broadcast', true) : '';
         } else {
             var file_url = url.resolve(g_m3u_url, g_chunks_downloading[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
             var options = request_options(file_url);
@@ -349,9 +349,9 @@ function download_vod() {
     function download_vod_recur(i) {
         if (i === (g_all_replay_chunks.length - g_chunksNotAvailable)) {
             if (g_download_Whole) {
-                endDownloading((g_chunksNotAvailable ? 'Replay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false, 0);
+                endDownloading((g_chunksNotAvailable ? 'Replay missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded, Recording Live')), false);
             } else {
-                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false, 0);
+                endDownloading((g_chunksNotAvailable ? 'Finished, missing ' + g_chunksNotAvailable + ' parts' : ('Replay Downloaded')), false);
             }
         } else {
             var progress = Math.round(((i + 1) / (g_all_replay_chunks.length - g_chunksNotAvailable)) * 100) + '%';
@@ -426,7 +426,7 @@ function download_vod() {
     }
 }
 
-function endDownloading(message, isLive, code) {
+function endDownloading(message, isLive) {
     if(g_all_chunks.length || g_all_replay_chunks.length){
         if (g_download_Whole) {
             if (isLive) {
@@ -434,7 +434,7 @@ function endDownloading(message, isLive, code) {
                 clearInterval(g_timeoutInterval);
                 setTimeout(function () {
                     process.send(message);
-                    process.exit(code)
+                    process.exit()
                 }, 1000)
             } else {
                 process.send(message);
@@ -443,7 +443,7 @@ function endDownloading(message, isLive, code) {
         } else {
             setTimeout(function () {
                 process.send(message);
-                process.exit(code)
+                process.exit()
             }, 1000)
         }
     }else{
