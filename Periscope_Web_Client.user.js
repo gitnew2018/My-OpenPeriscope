@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.05
+// @version     0.2.06
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -107,7 +107,7 @@ if (location.href == 'https://api.twitter.com/oauth/authorize') {
             var signInSMSButton = $('<a class="button">Sign in with SMS</a>').click(SignInSMS);
             var signInSidButton = $('<a class="button">Sign in with SID</a>').click(SignInSessionID);
             $(document.body).html('<input type="text" id="secret" size="60" placeholder="Enter periscope consumer secret here... or SID" value="' +
-                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, signInSMSButton, signInSidButton);
+                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, /* signInSMSButton,  */signInSidButton);
         }
         $(document.body).append(Progress.elem);
     });
@@ -1736,7 +1736,7 @@ Edit: function () {
     var NamesEditorSpoiler = $('<h3 class="spoiler menu" data-spoiler-link="NamesEditor">Names editor</h3>');
     var NamesEditor =  $('<div class="spoiler-content" data-spoiler-link="NamesEditor" id="NamesEditor" />')
         .append(
-            '<p>#{id}, #{language}, #{status}, #{user_display_name}, #{user_id}, #{username}, #{year}, #{month}, #{day}, #{hour}, #{minute}</p></br>' +
+            '<p>#{id}, #{language}, #{status}, #{user_display_name}, #{user_id}, #{username}, #{year}, #{month}, #{day}, #{hour}, #{minute}, #{second}</p></br>' +
             '<dt>#{partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
             '<dt>#{replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
             '<dt>#{private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
@@ -2260,7 +2260,7 @@ function getM3U(id, jcontainer) {
 
             settings.showPRlinks ? getURL(id, urlCallback, true) : '';
         }else if (replay_url){
-            var replay_base_url = replay_url.replace(/playlist.*m3u8/ig, '');
+            var replay_base_url = replay_url.replace(/([^\/]+)\.m3u8.+/ig, '');
             GM_xmlhttpRequest({
                 method: 'GET',
                 url: replay_url,
@@ -2297,7 +2297,7 @@ function getM3U(id, jcontainer) {
                         broadcastsWithLinks[id] = repLinksObj;
                     }
 
-                    if (locked && !broadcastsWithLinks[id].hasOwnProperty('decryptKey')){
+                    if (locked && !broadcastsWithLinks[id].hasOwnProperty('decryptKey') && m3u_text){
                             var keyURI = m3u_text.split('\n').filter(function (line) {
                                 return /(^#EXT-X-KEY:.+)/g.test(line);
                             });
@@ -2390,6 +2390,7 @@ function userFolderFileName(userString, b_info, partialReplay, replay, producer,
     b_info.day = zeros(date_created.getDate());
     b_info.hour = zeros(date_created.getHours());
     b_info.minute = zeros(date_created.getMinutes());
+    b_info.second = zeros(date_created.getSeconds());
     (partialReplay && !whole) ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
     (replay && !whole) ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
     b_info.is_locked ? (b_info.private = (settings.userPrivateShort || DefaultFolderFileNames.privateShort)) : '';
@@ -2461,7 +2462,7 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                 spawn.folder_path = output_dir;
                 spawn.file_name = name;
                 childProcesses.push(spawn);
-                if(childProcesses.length > 50){
+                if(childProcesses.length > 100){
                     childProcesses.shift()
                 }
                 $(document).find('.card.' + broadcast_info.id).find('.recContainer').empty().append(downloadStatus(broadcast_info.id, true, null));
@@ -2519,10 +2520,10 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
 }
 function saveAs(data, filename) {
     if (NODEJS) {
-        $('<input type="file" nwsaveas="' + filename + '" />').change(function () {
+        $('<input type="file" nwsaveas="' + filename + '" />')/* .change(function () {
             const fs = require('fs');
             fs.writeFile($(this).val(), data);
-        }).click();
+        }).click(); */
     }
 }
 function getFlag(country) {
@@ -2610,7 +2611,7 @@ function getDescription(stream) {
     var brdcstImage = $('<img lazysrc="' + stream.image_url_small + '"></img>').one('error',function(){this.src = stream.image_url});
     var showImage = $('<a class="lastestImage"></a>').click(function () {
         var win = window.open("", "screen", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=600,top=100,left="+(screen.width/2));
-        win.document.head.innerHTML = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
+        win.document.head.innerHTML = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title><style type="text/css">body{background: #2A2A2A}</style>';
         win.document.body.innerHTML = '<img src="' + stream.image_url + '"/>';
     }).append(brdcstImage, (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
     + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': ''));
@@ -2719,9 +2720,9 @@ function dManagerDescription(jcontainer) {
                     });
                 });
 
-                var stopButton = $('<a class="button right">Stop</a>').click(function () {
+                let stopButton = $('<a class="button right">Stop</a>').click(function () {
                     try {
-                        CProcess.stdin.end('q', CProcess.kill);
+                        CProcess.stdin.end('q', /* CProcess.kill */);
                     }catch(e){}
                 });
 
@@ -2766,10 +2767,11 @@ function dManagerDescription(jcontainer) {
                     }
                 });
                 let index = i;
+                let broadcast_id = broadcastInfo.id;
                 CProcess.on('exit', function () {
                         stopButton.remove();
-                        dManagerExitStatus.empty().append(downloadStatus(broadcastInfo.id, false, index));
-                        $(document).find('.card.' + broadcastInfo.id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastInfo.id, true, null));
+                        dManagerExitStatus.empty().append(downloadStatus(broadcast_id, false, index));
+                        $(document).find('.card.' + broadcast_id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcast_id, true, null));
                 });
                 var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerExitStatus, dManagerTimer, dManagerMessages);
 

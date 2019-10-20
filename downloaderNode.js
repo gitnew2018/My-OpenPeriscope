@@ -27,7 +27,7 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
     g_all_chunks = [], //[chunkxxxx0.ts, chunkxxxx1.ts, ...]
     g_live_chunks_queue = [],
     g_all_replay_chunks = [],
-    g_chunks_downloading = [],
+    g_batch_done = true,
     g_live_End,
     g_retries = 70, // number of errors that can happen before downloding stops.
     g_beginnig = true, //skip first timeout
@@ -41,16 +41,10 @@ var g_m3u_url = process.argv[process.argv.indexOf('-url') + 1],
     g_nokey = 0,
     g_encrypted = null;
 
-//to debug this downloader use this function below as you would console.log
-//no need to restart app just start downloading next file after you saved changes to this file
-//you can use JSON.stringify(*array*,null,2) to pretty-print your logs
-//you can output multiple log files just change g_fileName.txt to something else.
-//fs.appendFile(g_DOWNLOAD_DIR + '/' + g_fileName + '.txt', (/* what to log to a file */ + '\n'), 'utf8', function () {/*what to do after log file was created*/});
-
-//for debugging, this will keep process running after error, and log it to txt file
 process.on('uncaughtException', function (err) {
-
-            process.exit(2);
+    setTimeout(function() {
+        process.exit(2);
+    }, 1000);
 });
 
 g_savedDecryptionKey != 'undefined' ? (g_decryptionKey = Buffer.from(g_savedDecryptionKey, 'base64')) : (g_decryptionKey = null);
@@ -59,7 +53,7 @@ if ((g_replay_m3u_url == 'null') || (g_replay_m3u_url == 'undefined')) g_replay_
 (g_m3u_url && g_replay_m3u_url) ? (g_download_Whole = true): '';
 
 if (g_download_Whole) {
-    g_replay_m3u_url.includes('master_dynamic') ? '' : (g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000));
+    g_replay_m3u_url.includes('master_dynamic') ? '' : (g_mainInterval = setInterval(get_playlist, 4000, g_m3u_url));
     get_playlist(g_replay_m3u_url);
 
 } else if (g_replay_m3u_url) {
@@ -87,7 +81,7 @@ function get_playlist(urlLink) {
     var options = request_options(urlLink);
     var request = https.get(options, function (res) {
         var responseParts = [];
-        res.setEncoding('utf8');
+        // res.setEncoding('utf8');
         res.on('data', function (dataChunk) {
             responseParts.push(dataChunk);
         });
@@ -113,7 +107,7 @@ function get_playlist(urlLink) {
                     }
                 }
 
-                if ((g_decryptionKey === null) && g_encrypted) {
+                if ((g_decryptionKey === null) && m3u_response.includes('#EXT-X-KEY:')) {
                     var keyURI = (/(^#EXT-X-KEY:.+)/m.exec(m3u_response))[0].split('"')[1];
                     getKey(keyURI, 0);
                 }
@@ -126,6 +120,8 @@ function get_playlist(urlLink) {
                             g_live_chunks_queue.push(vid_chunk);
                         }
                     });
+
+                    timeout_check(120, null, false);
                     if (g_vod_done) {
                         download_live(g_live_End);
                     }
@@ -137,10 +133,11 @@ function get_playlist(urlLink) {
                         });
                         var newLink = url.resolve('https://' + url.parse(urlLink).host + '/', availableStreamsURLs[availableStreamsURLs.length - 1]); //pick the best quality one
                         if (newLink.endsWith('?type=replay')) {
-                            g_replay_m3u_url = newLink
+                            g_replay_m3u_url = newLink;
                         } else {
+                            g_m3u_url = newLink;
                             g_mainInterval ? clearInterval(g_mainInterval) : '';
-                            g_mainInterval = setInterval(get_playlist.bind(null, newLink), 4000);
+                            g_mainInterval = setInterval(get_playlist, 4000, newLink);
                         }
                         get_playlist(newLink);
 
@@ -159,20 +156,22 @@ function get_playlist(urlLink) {
                                     playlist_video_chunks.splice(0, playlist_video_chunks.length - limitedPlaylistLength);
                                 }
                             }
+                            g_all_chunks = playlist_video_chunks;
                             g_all_replay_chunks = playlist_video_chunks;
                             download_vod();
                         }
 
                     } else if (g_live_stream === null) { // live start
                         if (g_download_Whole) {
-                            g_live_chunks_queue = g_live_chunks_queue.filter(function (elem) {
+                            g_live_chunks_queue = playlist_video_chunks.filter(function (elem) {
                                 if (!g_all_replay_chunks.includes(elem)) {
                                     return elem;
                                 }
                             });
                             g_all_chunks = g_all_replay_chunks.concat(g_live_chunks_queue);
                         } else {
-                            g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000); //periodically check for updated playlist
+                            g_mainInterval ? clearInterval(g_mainInterval) : '';
+                            g_mainInterval = setInterval(get_playlist, 4000, urlLink); //periodically check for updated playlist
                         }
                         g_live_stream = true;
 
@@ -182,18 +181,25 @@ function get_playlist(urlLink) {
                 // no valid playlist
                 if (g_live_stream === null && g_m3u_url) { //some broadcasts begin with no valid playlists, treat it as live, with timeout
                     g_live_stream = true;
-                    g_mainInterval = setInterval(get_playlist.bind(null, g_m3u_url), 4000); //periodically check for updated playlist
+                    g_mainInterval = setInterval(get_playlist, 4000, urlLink); //periodically check for updated playlist
+                } else if (g_live_chunks_queue.length && g_vod_done) {
+                    download_live(g_live_End);
+                } else {
+                    timeout_check(30, ('Warning playlist error, status code: ' + res.statusCode), true);
                 }
-                timeout_check(60, ('Warning playlist error, status code: ' + res.statusCode));
             }
         });
     });
     request.on('error', function (e) {
         process.send(e) //save to log
         if (g_m3u_url) {
-            setTimeout(get_playlist.bind(null, g_m3u_url), 1000);
+            setTimeout(get_playlist, 4000, urlLink);
         }
-        timeout_check(60, ('Warning error when trying to get m3u file: ' + e));
+        if(g_live_chunks_queue.length && g_vod_done) {
+            download_live(g_live_End);
+        }else if((g_vod_done || !g_all_replay_chunks.length) && g_batch_done){
+            timeout_check(30, ('Warning error when trying to get m3u file: ' + e));
+        }
     });
 }
 
@@ -227,8 +233,8 @@ function decrypt(encryptedBuffer, chunk_name) {
     return Buffer.concat([decrypt.update(encryptedBuffer), decrypt.final()]);
 }
 
-function timeout_check(time, msg) {
-    if (((g_live_chunks_queue.length === 0) && !g_timingOut && !g_live_End) || (g_live_stream === null && !g_beginnig)) {
+function timeout_check(time, msg, stopMainInterval) {
+    if (((!g_live_chunks_queue.length) && !g_timingOut && !g_live_End && g_vod_done) || (g_live_stream === null && !g_beginnig)) {
         var counter = 0;
         g_timingOut = true;
         g_liveTimeout = setTimeout(function () {
@@ -239,39 +245,49 @@ function timeout_check(time, msg) {
             var defaultMsg = ('No new video chunks in the last ' + counter + 's');
             counter > 10 ? process.send(msg ? msg : defaultMsg) : '';
         }, 1000);
-    } else if (((g_live_chunks_queue.length !== 0) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
+    } else if (((g_live_chunks_queue.length && !stopMainInterval) || (g_live_stream === null)) && g_timingOut) { // cancel timeout
         clearTimeout(g_liveTimeout);
         clearInterval(g_timeoutInterval)
         g_timingOut = false;
         process.send(' ');
+    } else if (stopMainInterval && !g_timingOut){ // no valid playlist, vod might be still downloading.
+        process.send('playlist unavailable...');
+        g_timingOut = true;
+        g_liveTimeout = setTimeout(function () {
+            clearInterval(g_mainInterval);
+            if(!g_all_chunks.length && !g_all_replay_chunks.length)
+                endDownloading();
+        }, time * 1000);
     }
 }
 
 function download_live(end) {
-    timeout_check(120);
     !g_beginnig ? process.send('Uptime: ' + formatTime(Math.floor(process.uptime()))) : '';
 
     if ((g_encrypted && g_decryptionKey) || (g_encrypted === false)) {
-        if (!g_chunks_downloading.length && g_live_chunks_queue.length) {
+        if (g_batch_done && g_live_chunks_queue.length) {
             var i = 0;
-            g_chunks_downloading = g_live_chunks_queue.slice();
-            g_chunks_downloading.forEach(function () {
+            g_batch_done = false;
+            var chunks_downloading = g_live_chunks_queue.slice();
+            chunks_downloading.forEach(function () {
                 g_live_chunks_queue.shift();
             });
-            download_file_recur(i);
+            download_file_recur(i, chunks_downloading);
+        }else if(g_batch_done && !g_live_chunks_queue.length && end){ // when no new chunks just broadcast end appears on the playlist
+            endDownloading('End of broadcast', true);
         }
     } else {
-        (g_nokey === 3) ? process.exit(5): '';
+        (g_nokey === 3) ? (process.send('No Key'), process.exit(5)): '';
         g_nokey += 1;
-        setTimeout(download_live.bind(null, end), 1000); //if key not available try again after some time /async workaround
+        setTimeout(download_live, 3000, end); //if key not available try again after some time /async workaround
     }
 
-    function download_file_recur(i) {
-        if (i === g_chunks_downloading.length) {
-            g_chunks_downloading = [];
-            end ? endDownloading('End of broadcast', true) : '';
+    function download_file_recur(i, chunks_downloading, retryTimes = 3) {
+        if (i === chunks_downloading.length) {
+            g_batch_done = true;
+            if (end) endDownloading('End of broadcast', true);
         } else {
-            var file_url = url.resolve(g_m3u_url, g_chunks_downloading[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
+            var file_url = url.resolve(g_m3u_url, chunks_downloading[i]); //replace /playlist.m3u8 with /chunk_i.ts in url to get chunk url.
             var options = request_options(file_url);
             var dataParts = [];
 
@@ -281,10 +297,13 @@ function download_live(end) {
                 }).on('end', function () {
                     var chunkBuffer = Buffer.concat(dataParts);
 
-                    if (res.statusCode == 200) {
+                    if (res.statusCode == 404) {
+                        i += 1;
+                        download_file_recur(i, chunks_downloading);
+                    } else if (res.statusCode == 200) {           
                         if (res.headers['content-length'] === chunkBuffer.length.toString()) {
                             if (g_encrypted) {
-                                chunkBuffer = decrypt(chunkBuffer, g_chunks_downloading[i]);
+                                chunkBuffer = decrypt(chunkBuffer, chunks_downloading[i]);
                             }
 
                             fs.appendFile(g_DOWNLOAD_DIR + g_fileName + '.ts', chunkBuffer, { //concatenate incoming live video chunks
@@ -298,7 +317,7 @@ function download_live(end) {
                                     }
                                     if (g_retries > 0) {
                                         g_retries -= 1;
-                                        download_file_recur(i);
+                                        download_file_recur(i, chunks_downloading);
                                     } else {
                                         process.send('Error appending live chunk, Exiting: ' + err.code);
                                         process.send(err);
@@ -306,17 +325,17 @@ function download_live(end) {
                                     }
                                 } else {
                                     i += 1;
-                                    download_file_recur(i);
+                                    download_file_recur(i, chunks_downloading);
                                 }
                             });
 
                         } else {
-                            download_file_recur(i)
+                            download_file_recur(i, chunks_downloading);
                         }
                     } else {
                         if (g_retries > 0) {
                             g_retries -= 1;
-                            setTimeout(download_file_recur.bind(null, i), 500);
+                            setTimeout(download_file_recur, 1000, i, chunks_downloading);
                         }
                     }
                 });
@@ -325,11 +344,11 @@ function download_live(end) {
                 process.send('Warning download file error: ' + e);
                 if (g_retries > 0) {
                     g_retries -= 1;
-                    setTimeout(download_file_recur.bind(null, i), 500);
+                    setTimeout(download_file_recur, 1000, i, chunks_downloading);
                 } else {
                     process.send('Error downloading file, Exiting: ' + e);
                     process.send(e);
-                    throw e;
+                    process.exit(10);
                 }
             });
         }
@@ -406,7 +425,7 @@ function download_vod() {
                     } else {
                         if (g_retries > 0) {
                             g_retries -= 1;
-                            setTimeout(download_vod_recur.bind(null, i), 1000);
+                            setTimeout(download_vod_recur, 1000, i);
                         }
                     }
                 });
@@ -415,7 +434,7 @@ function download_vod() {
                 process.send('Warning download file error: ' + e);
                 if (g_retries > 0) {
                     g_retries -= 1;
-                    setTimeout(download_vod_recur.bind(null, i), 500);
+                    setTimeout(download_vod_recur, 500, i);
                 } else {
                     process.send('Error downloading file,  Exiting: ' + e);
                     process.send(e);
@@ -434,20 +453,21 @@ function endDownloading(message, isLive) {
                 clearInterval(g_timeoutInterval);
                 setTimeout(function () {
                     process.send(message);
-                    process.exit()
-                }, 1000)
+                    process.exit();
+                }, 1000);
             } else {
                 process.send(message);
                 g_vod_done = true;
+                download_live(g_live_End);
             }
         } else {
             setTimeout(function () {
                 process.send(message);
-                process.exit()
-            }, 1000)
+                process.exit();
+            }, 1000);
         }
     }else{
-        process.exit(7)
+        process.exit(7);
     }
 }
 

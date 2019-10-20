@@ -105,7 +105,7 @@ input[type="text"], textarea {
     outline: none;
     height: 2rem;
     margin: 0 10px 9px 0;
-    /* transition: box-shadow .3s; */
+    transition: box-shadow .3s;
     background: transparent;
 }
 
@@ -756,9 +756,9 @@ select:focus {
 }
 
 span.sProducer {
-    left: -1px;
+    left: -6px;
     top: -8px;
-    margin-left: -70px;
+    margin-left: -65px;
     position: relative;
     color: rgba(255, 255, 255, 0.6);
     background-color: rgba(0, 0, 0, 0.4);
