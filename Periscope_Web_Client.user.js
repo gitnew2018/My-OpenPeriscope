@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.2.06
+// @version     0.2.07
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -402,7 +402,7 @@ var Notifications = {
                     }
 
                     for (var n in broadcastsCache.idsQueue) {
-                        cardsContainer.find('.card.' + broadcastsCache.idsQueue[n]).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastsCache.idsQueue[n], true, null));
+                        cardsContainer.find('.card.' + broadcastsCache.idsQueue[n]).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastsCache.idsQueue[n], true));
                     }
                     
                     Notifications.old_list = new_list;
@@ -1969,7 +1969,7 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 var link = $('<a class="downloadGet"> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
-                let recLink = $('<span class="recContainer"/>').append(downloadStatus(resp.id, true, null));
+                let recLink = $('<span class="recContainer"/>').append(downloadStatus(resp.id, true));
 
                 var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
 
@@ -2465,7 +2465,7 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                 if(childProcesses.length > 100){
                     childProcesses.shift()
                 }
-                $(document).find('.card.' + broadcast_info.id).find('.recContainer').empty().append(downloadStatus(broadcast_info.id, true, null));
+                $(document).find('.card.' + broadcast_info.id).find('.recContainer').empty().append(downloadStatus(broadcast_info.id, true));
 
                 if (jcontainer) {
                     if (!spawn.pid)
@@ -2742,7 +2742,7 @@ function dManagerDescription(jcontainer) {
                     });
                 });
 
-                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false, i));
+                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false));
                 var dManagerMessages = $('<div class="dManagerMessages">' + (CProcess.lastMessage ? CProcess.lastMessage : '') + '</div>');
                 var dManagerTimer = $('<span class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</span>');
                 CProcess.removeAllListeners('message', function () {}) //to avoid multiple listeners, +1 at each refresh
@@ -2766,12 +2766,11 @@ function dManagerDescription(jcontainer) {
                         CProcess.lastMessage = msg; //preserve last message from spawned process between refreshes
                     }
                 });
-                let index = i;
                 let broadcast_id = broadcastInfo.id;
                 CProcess.on('exit', function () {
                         stopButton.remove();
-                        dManagerExitStatus.empty().append(downloadStatus(broadcast_id, false, index));
-                        $(document).find('.card.' + broadcast_id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcast_id, true, null));
+                        dManagerExitStatus.empty().append(downloadStatus(broadcast_id, false));
+                        $(document).find('.card.' + broadcast_id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcast_id, true));
                 });
                 var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerExitStatus, dManagerTimer, dManagerMessages);
 
@@ -2800,13 +2799,13 @@ function dManagerDescription(jcontainer) {
     return jcontainer;
 }
 
-function downloadStatus(broadcast_id, link, cpIndex){
-    if (cpIndex === null) cpIndex = childProcesses.findIndex(function(cProcess) {return cProcess.b_info.id == broadcast_id;});
+function downloadStatus(broadcast_id, link){
+    cpIndex = childProcesses.findIndex(function(cProcess) {return cProcess.b_info.id === broadcast_id;});
     if (cpIndex >= 0){
         let title = 'Recording/Downloading';
         let emote = '🔴';
         let eCode = childProcesses[cpIndex].exitCode;
-        if (link) {childProcesses.some(function(cProcess){ return (cProcess.b_info.id == broadcast_id && cProcess.exitCode === null)}) ? (eCode = null) : ''}; //if any process still downloading then show as downloading.
+        if (link) {childProcesses.some(function(cProcess){ return (cProcess.b_info.id === broadcast_id && cProcess.exitCode === null)}) ? (eCode = null) : ''}; //if any process still downloading then show as downloading.
         if (eCode === 0) title = 'Downloaded', emote = '✅';
         if (eCode === 1) title = 'Stopped', emote = '❎';
         if (eCode > 1) title = 'error', emote = '❌';

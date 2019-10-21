@@ -93,7 +93,7 @@ var GroupsController = {
     },
 
     add_channel: function (spoilerContent, channel, buttons) {
-        var PrivateChannelName = $('<a class="groupNameContainer"><span class="groupNameTitle">Name: </span><span class="groupName">' + emoji.replace_unified(channel.Name) + '</span>' + '</a>');
+        var PrivateChannelName = $('<a class="groupNameContainer"><span class="groupNameTitle">Name: </span><span class="groupName">' + emoji_to_img(channel.Name) + '</span>' + '</a>');
         var channel_description = $('<div class="groupCard description" cName="' + channel.Name + '" cid="' + channel.CID + '"/>')
             .append(
                 $('<a class="groupAvatar"><img class="avatar" width="64" lazysrc="' + channel.ThumbnailURLs[0].url + '"/>' +'</a>').click(function () {
@@ -166,7 +166,7 @@ var GroupsController = {
                 PeriscopeWrapper.V2_POST_Api('getBroadcasts', {
                         broadcast_ids: ids
                     }, function(resp){
-                        refreshList($('#GroupBroadcasts'), '<h3>' +  emoji.replace_unified(channelName) + ', ' + chan.NLive + ' lives, ' + chan.NReplay + '</h3>')(resp);
+                        refreshList($('#GroupBroadcasts'), '<h3>' +  emoji_to_img(channelName) + ', ' + chan.NLive + ' lives, ' + chan.NReplay + '</h3>')(resp);
                         var group_broadcasts_title = $('#GroupBroadcastsTitle');
                         var numLive = 0;
                         var numLocked = 0;
@@ -178,6 +178,7 @@ var GroupsController = {
                         group_broadcasts_title[0].innerText = numLive + '/' + (resp.length - numLive) + ' (Private '+ numLocked + ')' + " Group Broadcasts";
                         group_broadcasts_title.click();
                         group_broadcasts_title[0].scrollIntoView();
+                        
                     }
                 );
             };
