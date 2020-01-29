@@ -417,6 +417,47 @@ var Notifications = {
         }
     }
 };
+function getTimeStamp() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day =`${date.getDate()}`.padStart(2, '0');
+    const h = `${date.getHours()}`.padStart(2, '0');
+    const m = `${date.getMinutes()}`.padStart(2, '0');
+    const s = `${date.getSeconds()}`.padStart(2, '0');
+    return `${year}${month}${day}${h}${m}${s}`;
+};
+function download_settings() {
+    const ts = getTimeStamp();
+    const loginTwitter = JSON.parse(localStorage.getItem('loginTwitter')) || {};
+    const user_name = loginTwitter["user"]["username"] || "settings";
+    var filename = `${user_name}_${ts}.json`;
+    var data = [];
+    for(var i=0;i<localStorage.length; i++) {
+        var key = localStorage.key( i );
+
+        var item = localStorage.getItem( key );
+        try {
+            item = JSON.stringify(JSON.parse(item));
+        } catch(err) {
+            item = `"${item}"`;
+        }
+
+        data.push(`"${key}":${item}`);
+    }
+    let text = `{${data}}`;
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+};
 var ScrollPositions={}
 function switchSection(section, param, popstate) {
     ScrollPositions[document.URL.split('/')[3]] = window.pageYOffset;
@@ -1749,12 +1790,14 @@ Edit: function () {
     var PeriSettingsSpoiler = $('<h3 class="spoiler menu"  data-spoiler-link="PeriSettings">Periscope settings</h3>');
     var PeriSettings = $('<div class="spoiler-content" data-spoiler-link="PeriSettings" id="PeriSettings" />').append(settingsContainer, "<br/>", buttonSettings);
 
+    var saveSettingsButton = $('<a class="button">Download Settings</a>').click(function () {download_settings();});
 
     $('#right').append($('<div id="Edit"/>').append(
         ProfileEditSpoiler,  ProfileEdit,
         MyOpSettingsSpoiler, MyOpSettings,
         NamesEditorSpoiler, NamesEditor,
-        PeriSettingsSpoiler, PeriSettings
+        PeriSettingsSpoiler, PeriSettings,
+        saveSettingsButton
     ));
     $(".spoiler").off("click").spoiler({ triggerEvents: true });
     MyOpSettingsSpoiler.click();
